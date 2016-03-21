@@ -1,0 +1,73 @@
+﻿DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/RevSumDivision.tsv";
+DECLARE @OutputStream string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/RVR/DimRevSumDivision.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@RevSumDivisionTemp =
+    EXTRACT RevSumDivisionCode string,
+            RevSumDivision string,
+            RefreshDate DateTime          
+               FROM @InputFilepath
+    USING Extractors.Tsv(quoting : false);
+
+@DimRevSumDivision =
+    SELECT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY RevSumDivisionCode)) AS RevSumDivisionKey,
+           RevSumDivisionCode,RevSumDivision,
+           1 AS DwVersion,
+           DateTime.Now AS CreatedDate,
+           Environment.UserDomainName AS CreatedBy,
+           DateTime.Now AS ModifiedDate,
+           Environment.UserDomainName AS ModifiedBy
+    FROM @RevSumDivisionTemp;
+
+DROP TABLE IF EXISTS DimRevSumDivisionTemp;
+
+CREATE TABLE DimRevSumDivisionTemp
+(
+    RevSumDivisionKey int,
+    RevSumDivisionCode string,
+    RevSumDivision string,
+    DwVersion int,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    DwUpdatedDate DateTime,
+    DwUpdatedBy string,
+    INDEX idx1
+    CLUSTERED(RevSumDivisionKey ASC)
+    PARTITIONED BY
+    HASH(RevSumDivisionKey)
+);
+
+ 
+INSERT INTO DimRevSumDivisionTemp
+SELECT *  
+       FROM DimRevSumDivision;
+
+DROP TABLE IF EXISTS DimRevSumDivision;
+
+CREATE TABLE DimRevSumDivision
+(
+    RevSumDivisionKey int,
+    RevSumDivisionCode string,
+    RevSumDivision string,
+    DwVersion int,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    DwUpdatedDate DateTime,
+    DwUpdatedBy string,
+    INDEX idx1
+    CLUSTERED(RevSumDivisionKey ASC)
+    PARTITIONED BY
+    HASH(RevSumDivisionKey)
+);
+
+ 
+INSERT INTO DimRevSumDivision
+SELECT *  
+       FROM @DimRevSumDivision;
+
+
+OUTPUT @DimRevSumDivision
+TO @OutputStream
+USING Outputters.Tsv(quoting:false);
+

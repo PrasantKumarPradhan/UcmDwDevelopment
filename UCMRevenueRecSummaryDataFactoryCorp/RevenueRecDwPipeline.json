@@ -1,0 +1,109 @@
+{
+  "name": "RevenueRecDwPipeline",
+  "properties": {
+    "description": "RevenueRecSummaryDimensionPipeline",
+    "activities": [
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/REVENUERECSUMMARY/DimSoldByFull.usql",
+          "scriptLinkedService": "RevenueRecSummaryAzureStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 10,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "SoldByInputDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DimSoldbyOutputDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "executionPriorityOrder": "NewestFirst",
+          "retry": 1
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "SoldByUSqlActivityTemplate",
+        "linkedServiceName": "AzureDataLakeAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/REVENUERECSUMMARY/DimPublisherFull.usql",
+          "scriptLinkedService": "RevenueRecSummaryAzureStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 10,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "PublisherInputDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DimPublisherOutputDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "executionPriorityOrder": "NewestFirst",
+          "retry": 1
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "PublisherUSqlActivityTemplate",
+        "linkedServiceName": "AzureDataLakeAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/REVENUERECSUMMARY/DimSkuFull.usql",
+          "scriptLinkedService": "RevenueRecSummaryAzureStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 10,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "SkuInputDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DimSkuOutputDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "executionPriorityOrder": "NewestFirst",
+          "retry": 1
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "SkuUSqlActivityTemplate",
+        "linkedServiceName": "AzureDataLakeAnalyticsLinkedService"
+      }
+    ],
+    "start": "2016-03-09T00:00:00Z",
+    "end": "2016-03-09T01:00:00Z",
+    "isPaused": false,
+    "pipelineMode": "Scheduled"
+  },
+  "$schema": "http://datafactories.schema.management.azure.com/internalschemas/2015-08-01/Microsoft.DataFactory.pipeline.json"
+}

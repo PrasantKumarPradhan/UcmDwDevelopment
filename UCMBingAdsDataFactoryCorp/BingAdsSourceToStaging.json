@@ -1,0 +1,318 @@
+{
+  "name": "BingAdsSourceToStaging",
+  "properties": {
+    "activities": [
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "SqlSource",
+            "sqlReaderQuery": "SELECT [AccountId],REPLACE(REPLACE([AccountNumber], CHAR(13), ''), CHAR(10), ''),REPLACE(REPLACE(REPLACE([AccountName],'\"',''), CHAR(13), ''), CHAR(10), ''),[AdvertiserCustomerId],[AgencyCustomerId],REPLACE(REPLACE([AgencyContactName], CHAR(13), ''), CHAR(10), ''),[AccountTypeId] FROM dbo.Account"
+          },
+          "sink": {
+            "type": "BlobSink",
+            "writeBatchSize": 0,
+            "writeBatchTimeout": "00:00:00"
+          }
+        },
+        "inputs": [
+          {
+            "name": "AccountSource"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "AccountStage"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "AccountCopyTemplate"
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "SqlSource",
+            "sqlReaderQuery": "SELECT [CouponId],[CouponCode],[RedemptionCount],[CouponBatchId] FROM dbo.Coupon"
+          },
+          "sink": {
+            "type": "BlobSink",
+            "writeBatchSize": 0,
+            "writeBatchTimeout": "00:00:00"
+          }
+        },
+        "inputs": [
+          {
+            "name": "CouponSource"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "CouponStage"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "CouponCopyTemplate"
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "SqlSource",
+            "sqlReaderQuery": "SELECT [CouponBatchId],[CouponClassId],[MintDate],[RequesterAlias],[MinterAlias],[CouponCount],[MaxRedemptionCount],[StartDate],[EndDate],[ExpiryDate],[StatusId] FROM dbo.CouponBatch"
+          },
+          "sink": {
+            "type": "BlobSink",
+            "writeBatchSize": 0,
+            "writeBatchTimeout": "00:00:00"
+          }
+        },
+        "inputs": [
+          {
+            "name": "CouponBatchSource"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "CouponBatchStage"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "CouponBatchCopyTemplate"
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "SqlSource",
+            "sqlReaderQuery": "SELECT [CouponRedemptionId],[CouponId],[AccountId],[RedemptionDate],[ExpiryDate],[CouponValue],[CouponClassId],[CouponBatchId],[ModifiedDtim],[ModifiedByUserId] FROM dbo.CouponRedemption"
+          },
+          "sink": {
+            "type": "BlobSink",
+            "writeBatchSize": 0,
+            "writeBatchTimeout": "00:00:00"
+          }
+        },
+        "inputs": [
+          {
+            "name": "CouponRedemptionSource"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "CouponRedemptionStage"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "CouponRedemptionCopyTemplate"
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "SqlSource",
+            "sqlReaderQuery": "SELECT [CustomerId],REPLACE(REPLACE(REPLACE([Name],'\"',''), CHAR(13), ''), CHAR(10), ''),[CustomerTypeId],REPLACE(REPLACE([CustomerNumber], CHAR(13), ''),[FraudStatusId],[FraudReasonCodeId],[FraudStatusChangeDateTime] FROM [dbo].[Customer]"
+          },
+          "sink": {
+            "type": "BlobSink",
+            "writeBatchSize": 0,
+            "writeBatchTimeout": "00:00:00"
+          }
+        },
+        "inputs": [
+          {
+            "name": "CustomerSource"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "CustomerStage"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "CustomerCopyTemplate"
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "SqlSource",
+            "sqlReaderQuery": "SELECT [AdTypeId],[AdTypeName],[CreatedDTim] FROM [dbo].[AdType]"
+          },
+          "sink": {
+            "type": "BlobSink",
+            "writeBatchSize": 0,
+            "writeBatchTimeout": "00:00:00"
+          }
+        },
+        "inputs": [
+          {
+            "name": "AdTypeSource"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "AdTypeStage"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "AdTypeCopyTemplate"
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "SqlSource",
+            "sqlReaderQuery": "SELECT [AccountTypeId],[AccountTypeName],[CreatedDTim] FROM [dbo].[AccountType]"
+          },
+          "sink": {
+            "type": "BlobSink",
+            "writeBatchSize": 0,
+            "writeBatchTimeout": "00:00:00"
+          }
+        },
+        "inputs": [
+          {
+            "name": "AccountTypeSource"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "AccountTypeStage"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "AccountTypeCopyTemplate"
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "SqlSource",
+            "sqlReaderQuery": "SELECT [DistributionChannelId],[DistributionChannelName],[LanguageLocaleId],[ProductSiteId],[AdMetrixCountryId],[CreatedDTim],[PilotFlag] FROM [dbo].[DistributionChannel]"
+          },
+          "sink": {
+            "type": "BlobSink",
+            "writeBatchSize": 0,
+            "writeBatchTimeout": "00:00:00"
+          }
+        },
+        "inputs": [
+          {
+            "name": "DistributionChannelSource"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DistributionChannelStage"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "DistributionChannelCopyTemplate"
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "SqlSource",
+            "sqlReaderQuery": "SELECT [MediumId],[MediumName],[CreatedDtim] FROM [dbo].[Medium]"
+          },
+          "sink": {
+            "type": "BlobSink",
+            "writeBatchSize": 0,
+            "writeBatchTimeout": "00:00:00"
+          }
+        },
+        "inputs": [
+          {
+            "name": "MediumSource"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "MediumStage"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "MediumCopyTemplate"
+      }
+    ],
+    "start": "2016-03-16T00:00:00Z",
+    "end": "2016-03-16T01:00:00Z",
+    "isPaused": false,
+    "pipelineMode": "Scheduled"
+  },
+  "$schema": "http://datafactories.schema.management.azure.com/internalschemas/2015-08-01/Microsoft.DataFactory.pipeline.json"
+}

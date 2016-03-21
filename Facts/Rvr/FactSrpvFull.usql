@@ -1,0 +1,240 @@
+﻿DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/SrpvData.tsv";
+DECLARE @OutputStream string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/RVR/FactSearchResultPageViews.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@Revenue =
+    EXTRACT CalendarYear int,
+            CalendarMonth int,
+            GroupName string,
+            DeviceType string,
+            PricingLevel string,
+            ProductFamilyCode string,
+            RevSumDivisionCode string,
+            RevSumCategoryCode string,
+            Actual float?,
+            Budget float?,
+            Forecast float?
+    FROM @InputFilepath
+    USING Extractors.Tsv(quoting : false);
+
+
+@DimDeviceType =
+    SELECT *
+    FROM DimDeviceType;
+
+@DimPricingLevel =
+    SELECT *
+    FROM DimPricingLevel;
+
+@DimProductFamily =
+    SELECT *
+    FROM DimProductFamily;
+
+@DimRevSumCategory =
+    SELECT *
+    FROM DimRevSumCategory;
+
+@DimRevSumDivision =
+    SELECT *
+    FROM DimRevSumDivision;
+
+@DimRevenueType =
+    SELECT *
+    FROM DimRevenueType;
+
+@DimDate =
+    SELECT *
+    FROM DimDate;
+
+
+@FactSrpv_DeviceType =
+    SELECT  Convert.ToInt32((Convert.ToString(CalendarYear)+(Convert.ToString(CalendarMonth).Length==1 ? "0"+Convert.ToString(CalendarMonth) : Convert.ToString(CalendarMonth))+"01")) AS CalendarDate,
+           GroupName,
+           Dd.DeviceTypeKey,
+           PricingLevel,
+           ProductFamilyCode,
+           RevSumDivisionCode,
+           RevSumCategoryCode,
+           Actual,
+           Budget,
+           Forecast
+    FROM @Revenue AS Rr
+         LEFT OUTER JOIN
+             @DimDeviceType AS Dd
+         ON Rr.DeviceType == Dd.DeviceType;
+
+
+@FactSrpv_PricingLevel =
+    SELECT CalendarDate,
+           GroupName,
+           DeviceTypeKey,
+           Dd.PricingLevelKey,
+           ProductFamilyCode,
+           RevSumDivisionCode,
+           RevSumCategoryCode,
+           Actual,
+           Budget,
+           Forecast
+    FROM @FactSrpv_DeviceType AS Rr
+         LEFT OUTER JOIN
+             @DimPricingLevel AS Dd
+         ON Rr.PricingLevel == Dd.PricingLevel;
+
+
+@FactSrpv_ProductFamily =
+    SELECT CalendarDate,
+           GroupName,
+           DeviceTypeKey,
+           PricingLevelKey,
+           Dd.ProductFamilyKey,
+           RevSumDivisionCode,
+           RevSumCategoryCode,
+           Actual,
+           Budget,
+           Forecast
+    FROM @FactSrpv_PricingLevel AS Rr
+         LEFT OUTER JOIN
+             @DimProductFamily AS Dd
+         ON Rr.ProductFamilyCode == Dd.ProductFamilyCode;
+
+
+@FactSrpv_RevSumDivision =
+    SELECT CalendarDate,
+           GroupName,
+           DeviceTypeKey,
+           PricingLevelKey,
+           ProductFamilyKey,
+           Dd.RevSumDivisionKey,
+           RevSumCategoryCode,
+           Actual,
+           Budget,
+           Forecast
+    FROM @FactSrpv_ProductFamily AS Rr
+         LEFT OUTER JOIN
+             @DimRevSumDivision AS Dd
+         ON Rr.RevSumDivisionCode == Dd.RevSumDivisionCode;
+
+@FactSrpv_RevSumCategory =
+    SELECT CalendarDate,
+           GroupName,
+           DeviceTypeKey,
+           PricingLevelKey,
+           ProductFamilyKey,
+           RevSumDivisionKey,
+           Dd.RevSumCategoryKey,
+           Actual,
+           Budget,
+           Forecast
+    FROM @FactSrpv_RevSumDivision AS Rr
+         LEFT OUTER JOIN
+             @DimRevSumCategory AS Dd
+         ON Rr.RevSumCategoryCode == Dd.RevSumCategoryCode;
+
+
+@FactSrpv_DimDate =
+    SELECT Dd.DateKey AS CalendarDateKey,
+           GroupName,
+           DeviceTypeKey,
+           PricingLevelKey,
+           ProductFamilyKey,
+           RevSumDivisionKey,
+           RevSumCategoryKey,
+           Actual,
+           Budget,
+           Forecast
+    FROM @FactSrpv_RevSumCategory AS Rr
+         LEFT OUTER JOIN
+             @DimDate AS Dd
+         ON Rr.CalendarDate == Dd.SimpleDate;
+
+
+@FactSrpv_RevenueType =
+    SELECT CalendarDateKey,
+           Dd.RevenueTypeKey,
+           DeviceTypeKey,
+           PricingLevelKey,
+           ProductFamilyKey,
+           RevSumDivisionKey,
+           RevSumCategoryKey,
+           Actual,
+           Budget,
+           Forecast
+    FROM @FactSrpv_DimDate AS Rr
+         LEFT OUTER JOIN
+             @DimRevenueType AS Dd
+         ON Rr.GroupName == Dd.GroupName;
+
+@FactSrpv =
+    SELECT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY CalendarDateKey, RevenueTypeKey, DeviceTypeKey,
+           PricingLevelKey,
+           ProductFamilyKey,
+           RevSumDivisionKey,
+           RevSumCategoryKey)) AS SrpvFactKey,
+           *,
+           DateTime.Now AS CreatedDate,
+           Environment.UserDomainName AS CreatedBy
+    FROM @FactSrpv_RevenueType;
+
+DROP TABLE IF EXISTS FactSearchResultPageViewsTemp;
+
+CREATE TABLE FactSearchResultPageViewsTemp
+(
+    SrpvFactKey int,
+    CalendarDateKey int?,
+    RevenueTypeKey int?,
+    DeviceTypeKey int?,
+    PricingLevelKey int?,
+    ProductFamilyKey int?,
+    RevSumDivisionKey int?,
+    RevSumCategoryKey int?,
+    Actual float?,
+    Budget float?,
+    Forecast float?,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    INDEX idx1
+    CLUSTERED(SrpvFactKey ASC)
+    PARTITIONED BY
+    HASH(SrpvFactKey)
+
+);
+
+
+INSERT INTO FactSearchResultPageViewsTemp
+SELECT *
+FROM FactSearchResultPageViews;
+
+DROP TABLE IF EXISTS FactSearchResultPageViews;
+
+CREATE TABLE FactSearchResultPageViews
+(
+    SrpvFactKey int,
+    CalendarDateKey int?,
+    RevenueTypeKey int?,
+    DeviceTypeKey int?,
+    PricingLevelKey int?,
+    ProductFamilyKey int?,
+    RevSumDivisionKey int?,
+    RevSumCategoryKey int?,
+    Actual float?,
+    Budget float?,
+    Forecast float?,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    INDEX idx1
+    CLUSTERED(SrpvFactKey ASC)
+    PARTITIONED BY
+    HASH(SrpvFactKey)
+
+);
+
+
+INSERT INTO FactSearchResultPageViews
+SELECT *
+FROM @FactSrpv;
+
+
+OUTPUT @FactSrpv TO @OutputStream
+USING Outputters.Tsv(quoting:false);
+

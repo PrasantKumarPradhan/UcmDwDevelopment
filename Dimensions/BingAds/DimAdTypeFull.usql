@@ -1,0 +1,50 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+
+DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/AdType"+@DateTimeStamp+".tsv";
+DECLARE @OutputStream string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimAdType.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@TempAdType =
+    EXTRACT AdTypeId int,
+            AdTypeName string,
+            CreatedDtim DateTime
+    FROM @InputFilepath
+    USING Extractors.Tsv();
+
+@DimAdType =
+    SELECT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY AdTypeId))  AS AdTypeKey,
+           AdTypeId,AdTypeName,
+           1 AS DwVersion,
+          DateTime.Now AS CreatedDate,
+                    Environment.UserDomainName AS CreatedBy,
+                    DateTime.Now AS ModifiedDate,
+                    Environment.UserDomainName AS ModifiedBy  
+    FROM @TempAdType;
+
+DROP TABLE IF EXISTS DimAdType;
+
+CREATE TABLE DimAdType
+(
+    AdTypeKey int,
+    AdTypeId int,
+    AdTypeName string,
+    DwVersion int,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    DwUpdatedDate DateTime,
+    DwUpdatedBy string,
+    INDEX idx1
+    CLUSTERED(AdTypeKey ASC)
+    PARTITIONED BY
+    HASH(AdTypeKey)
+);
+ 
+ 
+INSERT INTO DimAdType
+SELECT *  
+       FROM @DimAdType;
+
+OUTPUT @DimAdType
+TO @OutputStream
+USING Outputters.Tsv(quoting:false); 

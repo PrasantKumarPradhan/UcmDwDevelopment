@@ -1,0 +1,64 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/CouponRedemption"+@DateTimeStamp+".tsv";
+DECLARE @OutputFilepath string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimCouponRedemption.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@TempCouponRedemption =
+    EXTRACT CouponRedemptionId int,
+	CouponId int,
+	AccountId int,
+	RedemptionDate DateTime,
+	ExpiryDate DateTime,
+	CouponValue string,
+	CouponClassId int?,
+	CouponBatchId int?,
+	ModifiedDtim DateTime,
+	ModifiedByUserId int? 
+	FROM @InputFilepath 
+    USING Extractors.Tsv();
+
+@TempDimCouponRedemption = SELECT CouponRedemptionId, CouponId , AccountId, RedemptionDate, ExpiryDate, CouponValue , CouponClassId,  CouponBatchId FROM @TempCouponRedemption; 
+
+@DimCouponRedemption =
+    SELECT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY CouponRedemptionId))  AS CouponRedemptionKey,
+           *,
+           1 AS TableVersion,
+          DateTime.Now AS CreatedDate,
+                    Environment.UserDomainName AS CreatedBy,
+                    DateTime.Now AS ModifiedDate,
+                    Environment.UserDomainName AS ModifiedBy  
+    FROM @TempDimCouponRedemption;
+
+DROP TABLE IF EXISTS DimCouponRedemption;
+
+CREATE TABLE DimCouponRedemption
+(
+CouponRedemptionKey int,
+SourceCouponRedemptionId int,
+	CouponId int,
+	AccountId int,
+	RedemptionDate DateTime,
+	ExpiryDate DateTime,
+	CouponValue string,
+	CouponClassId int?,
+	CouponBatchId int?,
+	 TableVersion int,
+	DWCreatedDate DateTime,
+    DWCreatedBy   string,
+    DWUpdatedDate DateTime,
+    DWUpdatedBy   string,
+    INDEX idx1
+    CLUSTERED(CouponRedemptionKey ASC)
+    PARTITIONED BY
+    HASH(CouponRedemptionKey)
+);
+ 
+ 
+INSERT INTO DimCouponRedemption
+SELECT *  
+       FROM @DimCouponRedemption;
+
+OUTPUT @DimCouponRedemption
+TO @OutputFilepath 
+USING Outputters.Tsv(quoting:false); 

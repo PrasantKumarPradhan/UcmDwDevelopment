@@ -1,0 +1,76 @@
+﻿DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/RevSumCategory.tsv";
+DECLARE @OutputStream string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/RVR/DimRevSumCategory.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@RevSumCategory =
+    EXTRACT RevSumCategoryCode string,
+            RevSumCategory string,
+            RefreshDate DateTime          
+               FROM @InputFilepath 
+    USING Extractors.Tsv(quoting : false);
+
+@DimRevSumCategory =
+    SELECT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY RevSumCategoryCode)) AS RevSumCategoryKey,
+           RevSumCategoryCode,RevSumCategory,
+           1 AS DwVersion,
+           DateTime.Now AS CreatedDate,
+           Environment.UserDomainName AS CreatedBy,
+           DateTime.Now AS ModifiedDate,
+           Environment.UserDomainName AS ModifiedBy
+    FROM @RevSumCategory;
+
+
+// Backup of catalog table
+
+DROP TABLE IF EXISTS DimRevSumCategoryTemp;
+
+CREATE TABLE DimRevSumCategoryTemp
+(
+    RevSumCategoryKey int,
+    RevSumCategoryCode string,
+    RevSumCategory string,
+    DwVersion int,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    DwUpdatedDate DateTime,
+    DwUpdatedBy string,
+    INDEX idx1
+    CLUSTERED(RevSumCategoryKey ASC)
+    PARTITIONED BY
+    HASH(RevSumCategoryKey)
+);
+
+ 
+INSERT INTO DimRevSumCategoryTemp
+SELECT *  
+       FROM DimRevSumCategory;
+
+DROP TABLE IF EXISTS DimRevSumCategory;
+
+CREATE TABLE DimRevSumCategory
+(
+    RevSumCategoryKey int,
+    RevSumCategoryCode string,
+    RevSumCategory string,
+    DwVersion int,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    DwUpdatedDate DateTime,
+    DwUpdatedBy string,
+    INDEX idx1
+    CLUSTERED(RevSumCategoryKey ASC)
+    PARTITIONED BY
+    HASH(RevSumCategoryKey)
+);
+
+ 
+INSERT INTO DimRevSumCategory
+SELECT *  
+       FROM @DimRevSumCategory;
+
+
+OUTPUT @DimRevSumCategory
+TO @OutputStream
+USING Outputters.Tsv(quoting:false);
+

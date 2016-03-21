@@ -1,0 +1,52 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+
+DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/AccountType"+@DateTimeStamp+".tsv";
+DECLARE @OutputStream string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimAccountType.tsv";
+
+@AccountTypeTemp =
+    EXTRACT AccountTypeId int,
+            AccountTypeName string,
+            CreatedDTim DateTime
+               FROM @InputFilepath
+    USING Extractors.Tsv();
+
+
+USE DATABASE UcmDatawarehouse;
+
+@DimAccountType =
+    SELECT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY AccountTypeId)) AS AccountTypeKey,
+           AccountTypeId,
+           AccountTypeName,
+           1 AS DwVersion,
+           DateTime.Now AS CreatedDate,
+           Environment.UserDomainName AS CreatedBy,
+           DateTime.Now AS ModifiedDate,
+           Environment.UserDomainName AS ModifiedBy
+    FROM @AccountTypeTemp;
+
+DROP TABLE DimAccountType;
+CREATE TABLE DimAccountType
+(
+    AccountTypeKey int,
+    AccountTypeId int,
+    AccountTypeName string,
+    DwVersion int,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    DwUpdatedDate DateTime,
+    DwUpdatedBy string,
+    INDEX idx1
+    CLUSTERED(AccountTypeKey ASC)
+    PARTITIONED BY
+    HASH(AccountTypeKey)
+);
+
+ 
+INSERT INTO DimAccountType
+SELECT *  
+       FROM @DimAccountType;
+
+
+OUTPUT @DimAccountType
+TO @OutputStream
+USING Outputters.Tsv(quoting:false);

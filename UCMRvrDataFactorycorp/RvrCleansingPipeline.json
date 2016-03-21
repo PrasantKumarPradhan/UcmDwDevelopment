@@ -1,0 +1,261 @@
+{
+  "name": "RvrCleansingPipeline",
+  "properties": {
+    "description": "",
+    "activities": [
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/RVR/DimensionStaging.usql",
+          "scriptLinkedService": "RvrBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "DeviceTypeStageDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DeviceTypeEnrichedStageDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "DeviceTypeUSqlActivityTemplate",
+        "linkedServiceName": "RvrAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/RVR/DimensionStaging.usql",
+          "scriptLinkedService": "RvrBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "PricingLevelStageDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "PricingLevelEnrichedStageDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "PricingLevelUSqlActivityTemplate",
+        "linkedServiceName": "RvrAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/RVR/DimensionStaging.usql",
+          "scriptLinkedService": "RvrBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "ProductFamilyStageDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "ProductFamilyEnrichedStageDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "ProductFamilyUSqlActivityTemplate",
+        "linkedServiceName": "RvrAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/RVR/DimensionStaging.usql",
+          "scriptLinkedService": "RvrBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "RevSumCategoryStageDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "RevSumCategoryEnrichedStageDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "RevSumCategoryUSqlActivityTemplate",
+        "linkedServiceName": "RvrAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/RVR/DimensionStaging.usql",
+          "scriptLinkedService": "RvrBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "RevSumDivisionStageDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "RevSumDivisionEnrichedStageDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "RevSumDivisionUSqlActivityTemplate",
+        "linkedServiceName": "RvrAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/RVR/DimensionStaging.usql",
+          "scriptLinkedService": "RvrBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "RevenueTypeStageDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "RevenueTypeEnrichedStageDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "RevenueTypeUSqlActivityTemplate",
+        "linkedServiceName": "RvrAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/RVR/DimensionStaging.usql",
+          "scriptLinkedService": "RvrBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "SrpvDataStageDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "SrpvDataEnrichedStageDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "SrpvDataUSqlActivityTemplate",
+        "linkedServiceName": "RvrAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/RVR/DimensionStaging.usql",
+          "scriptLinkedService": "RvrBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "RvrDataStageDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "RvrDataEnrichedStageDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "RvrDataUSqlActivityTemplate",
+        "linkedServiceName": "RvrAnalyticsLinkedService"
+      }
+    ],
+    "start": "2016-03-16T00:00:00Z",
+    "end": "2016-03-16T01:00:00Z",
+    "isPaused": false,
+    "pipelineMode": "Scheduled"
+  },
+  "$schema": "http://datafactories.schema.management.azure.com/internalschemas/2015-08-01/Microsoft.DataFactory.pipeline.json"
+}

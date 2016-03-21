@@ -1,0 +1,810 @@
+﻿USE DATABASE UcmDatawarehouse;
+
+DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+
+DECLARE @input_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/REVENUERECSUMMARY/RevenueRecSummary"+@DateTimeStamp+".tsv"; 
+//DECLARE @input_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/PricingLevel"+@DateTimeStamp+".tsv"; 
+//DECLARE @input_filepath string = "adl://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/REVENUERECSUMMARY/RevenueRecSummary_20160309_20160309.tsv";
+
+
+@IncrementalFileExtract =
+    EXTRACT RevenueRecDateKey int,
+            CampaignId int?,
+            AdvAccountId int?,
+            PubAccountId int?,
+            DistributionChannelId int?,
+            MediumId int?,
+            PricingModelId int?,
+            DeliveryDateKey int,
+            TransactionTypeId int?,
+            SoldBy string,
+            PublishedBy string,
+            Sku string,
+            CurrencyId int?,
+            ServiceLevelId int?,
+            ImpressionCnt int?,            
+            GrossAmt double?,
+            AgencyCommAmt double?,
+            ClickCnt int?,
+            SalesHouseCommAmt double?,
+            PublisherEarnings double?,
+            OperationCostAllowance double?,
+            MSRevenue double?,
+            RevenueMS double?,
+            RevenuePartner double?,
+            RevenueSyndicated double?,
+            AgencyCommMS double?,
+            AgencyCommPartner double?,
+            AgencyCommSyndicated double?,
+            SalesHouseCommMS double?,
+            SalesHouseCommSyndicated double?,
+            SalesHouseCommPartner double?,
+            CouponConsumedAmount double?,
+            CouponConsumedAmountMS double?,
+            CouponConsumedAmountSyndicated double?,
+            CouponConsumedAmountPartner double?,
+            PIType int?
+    FROM @input_filepath
+    USING Extractors.Tsv(silent:true);
+
+@CountOfExtract =
+    SELECT COUNT() AS ExtractCount
+    FROM @IncrementalFileExtract;
+
+@SoldBy =
+    SELECT DISTINCT SoldBy
+    FROM @IncrementalFileExtract;
+
+//@SoldBy =
+//    SELECT DISTINCT (ROW_NUMBER() OVER(ORDER BY SoldBy)) AS SoldById,
+//                    SoldBy
+//    FROM @SoldBy;
+
+OUTPUT @SoldBy
+TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/REVENUERECSUMMARY/SoldBy.tsv"
+USING Outputters.Tsv(quoting : false);
+
+@PublishedBy =
+    SELECT DISTINCT PublishedBy
+    FROM @IncrementalFileExtract;
+
+//@PublishedBy =
+//    SELECT DISTINCT (ROW_NUMBER() OVER(ORDER BY PublishedBy)) AS PublisherId,
+//                    PublishedBy AS PublisherBy
+//    FROM @PublishedBy;
+
+OUTPUT @PublishedBy
+TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/REVENUERECSUMMARY/Publisher.tsv"
+USING Outputters.Tsv(quoting : false);
+
+@Sku =
+    SELECT DISTINCT Sku
+    FROM @IncrementalFileExtract;
+
+//@Sku =
+//    SELECT DISTINCT (ROW_NUMBER() OVER(ORDER BY Sku)) AS SkuId,
+//                    Sku AS SkuName
+//    FROM @Sku;
+
+OUTPUT @Sku
+TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/REVENUERECSUMMARY/Sku.tsv"
+USING Outputters.Tsv(quoting : false);    
+
+
+@NormalizedWithPublisher =
+    SELECT RevenueRecDateKey,
+           CampaignId,
+           AdvAccountId,
+           PubAccountId,
+           DistributionChannelId,
+           MediumId,
+           PricingModelId,
+           DeliveryDateKey,
+           TransactionTypeId,
+           SoldBy,
+           Dp.PublisherKey,
+           Sku,
+           CurrencyId,
+           ServiceLevelId,
+           ImpressionCnt,
+           //AcquisitionChannelRevenueActual,
+           GrossAmt,
+           AgencyCommAmt,
+           ClickCnt,
+           SalesHouseCommAmt,
+           PublisherEarnings,
+           OperationCostAllowance,
+           MSRevenue,
+           RevenueMS,
+           RevenuePartner,
+           RevenueSyndicated,
+           AgencyCommMS,
+           AgencyCommPartner,
+           AgencyCommSyndicated,
+           SalesHouseCommMS,
+           SalesHouseCommSyndicated,
+           SalesHouseCommPartner,
+           CouponConsumedAmount,
+           CouponConsumedAmountMS,
+           CouponConsumedAmountSyndicated,
+           CouponConsumedAmountPartner,
+	       PIType,
+	       "" AS Ipm,
+           "" AS DeviceType,
+           "" AS DeviceOS,
+           DateTime.Now AS CreatedDate,
+           "" AS CreatedBy                   
+    FROM @IncrementalFileExtract AS Rev
+         LEFT OUTER JOIN
+             DimPublisher AS Dp
+         ON Rev.PublishedBy == Dp.PublisherName;
+
+@NormalizedWithSoldBy =
+    SELECT RevenueRecDateKey,
+           CampaignId,
+           AdvAccountId,
+           PubAccountId,
+           DistributionChannelId,
+           MediumId,
+           PricingModelId,
+           DeliveryDateKey,
+           TransactionTypeId,
+           Dsb.SoldByKey,
+           PublisherKey,
+           Sku,
+           CurrencyId,
+           ServiceLevelId,
+           ImpressionCnt,
+          // AcquisitionChannelRevenueActual,
+           GrossAmt,
+           AgencyCommAmt,
+           ClickCnt,
+           SalesHouseCommAmt,
+           PublisherEarnings,
+           OperationCostAllowance,
+           MSRevenue,
+           RevenueMS,
+           RevenuePartner,
+           RevenueSyndicated,
+           AgencyCommMS,
+           AgencyCommPartner,
+           AgencyCommSyndicated,
+           SalesHouseCommMS,
+           SalesHouseCommSyndicated,
+           SalesHouseCommPartner,
+           CouponConsumedAmount,
+           CouponConsumedAmountMS,
+           CouponConsumedAmountSyndicated,
+           CouponConsumedAmountPartner,
+	       PIType,
+	       Ipm,
+	       DeviceType,
+	       DeviceOS,
+           CreatedDate,
+           CreatedBy                    
+    FROM @NormalizedWithPublisher AS Rev
+         LEFT OUTER JOIN
+             DimSoldBy AS Dsb
+         ON Rev.SoldBy == Dsb.SoldBy;
+
+@NormalizedWithSku =
+    SELECT RevenueRecDateKey,
+           CampaignId,
+           AdvAccountId,
+           PubAccountId,
+           DistributionChannelId,
+           MediumId,
+           PricingModelId,
+           DeliveryDateKey,
+           TransactionTypeId,
+           SoldByKey,
+           PublisherKey,
+           Ds.SkuKey,
+           CurrencyId,
+           ServiceLevelId,
+           ImpressionCnt,
+           //AcquisitionChannelRevenueActual,
+           GrossAmt,
+           AgencyCommAmt,
+           ClickCnt,
+           SalesHouseCommAmt,
+           PublisherEarnings,
+           OperationCostAllowance,
+           MSRevenue,
+           RevenueMS,
+           RevenuePartner,
+           RevenueSyndicated,
+           AgencyCommMS,
+           AgencyCommPartner,
+           AgencyCommSyndicated,
+           SalesHouseCommMS,
+           SalesHouseCommSyndicated,
+           SalesHouseCommPartner,
+           CouponConsumedAmount,
+           CouponConsumedAmountMS,
+           CouponConsumedAmountSyndicated,
+           CouponConsumedAmountPartner,
+	       PIType,
+	       Ipm,
+	       DeviceType,
+	       DeviceOS,
+           CreatedDate,
+           CreatedBy                    
+    FROM @NormalizedWithSoldBy AS Rev
+         LEFT OUTER JOIN
+             DimSku AS Ds
+         ON Rev.Sku == Ds.SkuName;
+
+@NormalizedWithDate =
+    SELECT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY RevenueRecDateKey, CampaignId, AdvAccountId, PubAccountId, DistributionChannelId, MediumId, PricingModelId, TransactionTypeId, CurrencyId, ServiceLevelId)) AS Rn,
+           - 1 AS RevenueRecFactKey,
+           Dt.DateKey AS RevenueRecDateKey,
+           CampaignId,
+           AdvAccountId,
+           PubAccountId,
+           DistributionChannelId,
+           MediumId,
+           PricingModelId,
+           Dt.DateKey AS DeliveryDateKey,
+           TransactionTypeId,
+           SoldByKey,
+           PublisherKey,
+           SkuKey,
+           CurrencyId,
+           ServiceLevelId,
+           ImpressionCnt,
+           GrossAmt,
+           AgencyCommAmt,
+           ClickCnt,
+           SalesHouseCommAmt,
+           PublisherEarnings,
+           OperationCostAllowance,
+           MSRevenue,
+           RevenueMS,
+           RevenuePartner,
+           RevenueSyndicated,
+           AgencyCommMS,
+           AgencyCommPartner,
+           AgencyCommSyndicated,
+           SalesHouseCommMS,
+           SalesHouseCommSyndicated,
+           SalesHouseCommPartner,
+           CouponConsumedAmount,
+           CouponConsumedAmountMS,
+           CouponConsumedAmountSyndicated,
+           CouponConsumedAmountPartner,
+           PIType,
+           Ipm,
+	       DeviceType,
+	       DeviceOS,
+           CreatedDate,
+           CreatedBy
+    FROM @NormalizedWithSku AS Rev
+         LEFT OUTER JOIN
+            DimDate AS Dt
+         ON Rev.DeliveryDateKey == Dt.SimpleDate AND Rev.RevenueRecDateKey == Dt.SimpleDate;
+
+
+@Temp_Max =
+    SELECT MAX(RevenueRecFactKey) AS MaxKey,
+           - 1 AS RevenueRecFactKey
+    FROM FactRevenueRecSummary;
+
+@FactTable_Full =
+    SELECT Convert.ToInt32((Di.RevenueRecFactKey + Tm.MaxKey)) AS RevenueRecFactKey,
+           (int?) RevenueRecDateKey AS RevenueRecDateKey,
+           CampaignId,
+           AdvAccountId,
+           PubAccountId,
+           DistributionChannelId,
+           MediumId,
+           PricingModelId,
+           (int?) DeliveryDateKey AS DeliveryDateKey,
+           TransactionTypeId,
+           SoldByKey,
+           PublisherKey,
+           SkuKey,
+           CurrencyId,
+           ServiceLevelId,
+           ImpressionCnt,
+           //AcquisitionChannelRevenueActual,
+           GrossAmt,
+           AgencyCommAmt,
+           ClickCnt,
+           SalesHouseCommAmt,
+           PublisherEarnings,
+           OperationCostAllowance,
+           MSRevenue,
+           RevenueMS,
+           RevenuePartner,
+           RevenueSyndicated,
+           AgencyCommMS,
+           AgencyCommPartner,
+           AgencyCommSyndicated,
+           SalesHouseCommMS,
+           SalesHouseCommSyndicated,
+           SalesHouseCommPartner,
+           CouponConsumedAmount,
+           CouponConsumedAmountMS,
+           CouponConsumedAmountSyndicated,
+           CouponConsumedAmountPartner,
+           PIType,
+           Ipm,
+           DeviceType,
+           DeviceOS,
+           Di.CreatedDate,
+           Di.CreatedBy    
+    FROM @NormalizedWithDate AS Di
+         INNER JOIN
+             @Temp_Max AS Tm
+         ON Di.RevenueRecFactKey == Tm.RevenueRecFactKey;
+
+//Now before inserting getting the count of teh Fact table
+
+@CountOfFactTable =
+    SELECT COUNT() AS FactCount
+    FROM FactRevenueRecSummary; 
+
+
+INSERT INTO FactRevenueRecSummary
+SELECT *
+FROM @FactTable_Full;
+
+////@CountOfFactTablePost =
+////    SELECT COUNT() AS FactCount
+////    FROM FactRevenueRecSummary;
+
+OUTPUT @FactTable_Full
+TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/FactRevenueRecSummary.tsv"
+USING Outputters.Tsv();
+
+OUTPUT @CountOfExtract
+TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/Outputs/ExtractCount.tsv"
+USING Outputters.Tsv();
+
+OUTPUT @CountOfFactTable
+TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/Outputs/FactCount.tsv"
+USING Outputters.Tsv();
+//
+//OUTPUT @CountOfFactTable
+//TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/Outputs/FactCount.tsv"
+//USING Outputters.Tsv();
+
+//OUTPUT @CountOfFactTablePost
+//TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/Outputs/FactCountPost.tsv"
+//USING Outputters.Tsv();
+
+//////@TempRevRevenue =
+//////    SELECT Convert.ToInt32(RevenueRecDateKey) AS RevenueRecDateKey,
+//////           CampaignId,
+//////           AdvAccountId,
+//////           PubAccountId,
+//////           DistributionChannelId,
+//////           MediumId,
+//////           PricingModelId,
+//////           DeliveryDateKey,
+//////           TransactionTypeId,
+//////           SoldBy,
+//////           PublishedBy,
+//////           Sku,
+//////           CurrencyId,
+//////           ServiceLevelId,
+//////           ImpressionCnt,         
+//////           GrossAmt,
+//////           AgencyCommAmt,
+//////           ClickCnt,
+//////           SalesHouseCommAmt,
+//////           PublisherEarnings,
+//////           OperationCostAllowance,
+//////           MSRevenue,
+//////           RevenueMS,
+//////           RevenuePartner,
+//////           RevenueSyndicated,
+//////           AgencyCommMS,
+//////           AgencyCommPartner,
+//////           AgencyCommSyndicated,
+//////           SalesHouseCommMS,
+//////           SalesHouseCommSyndicated,
+//////           SalesHouseCommPartner,
+//////           CouponConsumedAmount,
+//////           CouponConsumedAmountMS,          
+//////           CouponConsumedAmountSyndicated,
+//////           CouponConsumedAmountPartner,
+//////            PIType
+//////    FROM @RevenueRev;
+////
+////@DistDate =
+////    SELECT DISTINCT RevenueRecDateKey
+////    FROM @TempRevRevenue;
+////
+////OUTPUT @DistDate
+////TO @"adl://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/Output/DistDate.tsv"
+////USING Outputters.Tsv(quoting : false);
+////
+////
+////
+////@MaxRevDateKeyFromCatalog =
+////    SELECT MAX(RevenueRecDateKey) AS MaxRevenueRecDateKey
+////    FROM UcmDatawarehouse.dbo.FactRevenueRecSummary;
+//
+//@AnyVariable =
+//    SELECT (@DistDate.RevenueRecDateKey.Equals(@MaxRevDateKeyFromCatalog.MaxRevenueRecDateKey)  ? 1 : 0)AS Comparison
+//    FROM @DistDate
+//         CROSS JOIN
+//             @MaxRevDateKeyFromCatalog;
+//
+//OUTPUT @AnyVariable
+//TO @"adl://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/Output/FactRevRecPOC.tsv"
+//USING Outputters.Tsv(quoting : false);
+
+////
+////@SoldBy =
+////    SELECT DISTINCT SoldBy
+////    FROM @TempRevRevenue;
+////
+//////@SoldBy =
+//////    SELECT DISTINCT (ROW_NUMBER() OVER(ORDER BY SoldBy)) AS SoldById,
+//////                    SoldBy
+//////    FROM @SoldBy;
+////
+////OUTPUT @SoldBy
+////TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/REVENUERECSUMMARY/SoldBy.tsv"
+////USING Outputters.Tsv(quoting : false);
+////
+////@PublishedBy =
+////    SELECT DISTINCT PublishedBy
+////    FROM @TempRevRevenue;
+////
+//////@PublishedBy =
+//////    SELECT DISTINCT (ROW_NUMBER() OVER(ORDER BY PublishedBy)) AS PublisherId,
+//////                    PublishedBy AS PublisherBy
+//////    FROM @PublishedBy;
+////
+////OUTPUT @PublishedBy
+////TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/REVENUERECSUMMARY/Publisher.tsv"
+////USING Outputters.Tsv(quoting : false);
+////
+////@Sku =
+////    SELECT DISTINCT Sku
+////    FROM @TempRevRevenue;
+////
+//////@Sku =
+//////    SELECT DISTINCT (ROW_NUMBER() OVER(ORDER BY Sku)) AS SkuId,
+//////                    Sku AS SkuName
+//////    FROM @Sku;
+////
+////OUTPUT @Sku
+////TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/REVENUERECSUMMARY/Sku.tsv"
+////USING Outputters.Tsv(quoting : false);    
+//
+//@TempDimDate =
+//    SELECT *
+//    FROM DimDate;
+//
+//@DimSku =
+//    SELECT *
+//    FROM DimSku;
+//
+//@DimSoldBy =
+//    SELECT *
+//    FROM DimSoldBy;
+//
+//@DimPublisher =
+//    SELECT *
+//    FROM DimPublisher;
+//
+//@FactRev_AccountKey_RevDateKey =
+//    SELECT Dt.DateKey AS RevenueRecDateKey,
+//           CampaignId,
+//           AdvAccountId,
+//           PubAccountId,
+//           DistributionChannelId,
+//           MediumId,
+//           PricingModelId,
+//           DeliveryDateKey,
+//           TransactionTypeId,
+//           SoldBy,
+//           PublishedBy,
+//           Sku,
+//           CurrencyId,
+//           ServiceLevelId,
+//           ImpressionCnt,
+//           //AcquisitionChannelRevenueActual,
+//           GrossAmt,
+//           AgencyCommAmt,
+//           ClickCnt,
+//           SalesHouseCommAmt,
+//           PublisherEarnings,
+//           OperationCostAllowance,
+//           MSRevenue,
+//           RevenueMS,
+//           RevenuePartner,
+//           RevenueSyndicated,
+//           AgencyCommMS,
+//           AgencyCommPartner,
+//           AgencyCommSyndicated,
+//           SalesHouseCommMS,
+//           SalesHouseCommSyndicated,
+//           SalesHouseCommPartner,
+//           CouponConsumedAmount,
+//           CouponConsumedAmountMS,
+//           CouponConsumedAmountSyndicated,
+//           CouponConsumedAmountPartner,
+//	       PIType,	   
+//           DateTime.Now AS CreatedDate,
+//           Environment.UserDomainName AS CreatedBy                    
+//    FROM @TempRevRevenue AS Rev
+//         LEFT OUTER JOIN
+//             @TempDimDate AS Dt
+//         ON Rev.RevenueRecDateKey == Dt.SimpleDate CROSS JOIN @AnyVariable WHERE Comparison == 0;
+//
+//
+//OUTPUT @FactRev_AccountKey_RevDateKey
+//TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/FactRevenueRecSummaryIncrementCheck.tsv"
+//USING Outputters.Tsv(quoting : false);
+//;
+//
+//@FactRev_AccountKey_RevDateKey =
+//    SELECT RevenueRecDateKey,
+//           CampaignId,
+//           AdvAccountId,
+//           PubAccountId,
+//           DistributionChannelId,
+//           MediumId,
+//           PricingModelId,
+//           DeliveryDateKey,
+//           TransactionTypeId,
+//           SoldBy,
+//           Dp.PublisherKey,
+//           Sku,
+//           CurrencyId,
+//           ServiceLevelId,
+//           ImpressionCnt,
+//           //AcquisitionChannelRevenueActual,
+//           GrossAmt,
+//           AgencyCommAmt,
+//           ClickCnt,
+//           SalesHouseCommAmt,
+//           PublisherEarnings,
+//           OperationCostAllowance,
+//           MSRevenue,
+//           RevenueMS,
+//           RevenuePartner,
+//           RevenueSyndicated,
+//           AgencyCommMS,
+//           AgencyCommPartner,
+//           AgencyCommSyndicated,
+//           SalesHouseCommMS,
+//           SalesHouseCommSyndicated,
+//           SalesHouseCommPartner,
+//           CouponConsumedAmount,
+//           CouponConsumedAmountMS,
+//           CouponConsumedAmountSyndicated,
+//           CouponConsumedAmountPartner,
+//	       PIType,
+//	       Ipm,
+//	       DeviceType,
+//	       DeviceOS,
+//           CreatedDate,
+//           CreatedBy                    
+//    FROM @FactRev_AccountKey_RevDateKey AS Rev
+//         LEFT OUTER JOIN
+//             @DimPublisher AS Dp
+//         ON Rev.PublishedBy == Dp.PublisherName;
+//
+//@FactRev_AccountKey_RevDateKey =
+//    SELECT RevenueRecDateKey,
+//           CampaignId,
+//           AdvAccountId,
+//           PubAccountId,
+//           DistributionChannelId,
+//           MediumId,
+//           PricingModelId,
+//           DeliveryDateKey,
+//           TransactionTypeId,
+//           Dsb.SoldByKey,
+//           PublisherKey,
+//           Sku,
+//           CurrencyId,
+//           ServiceLevelId,
+//           ImpressionCnt,
+//           //AcquisitionChannelRevenueActual,
+//           GrossAmt,
+//           AgencyCommAmt,
+//           ClickCnt,
+//           SalesHouseCommAmt,
+//           PublisherEarnings,
+//           OperationCostAllowance,
+//           MSRevenue,
+//           RevenueMS,
+//           RevenuePartner,
+//           RevenueSyndicated,
+//           AgencyCommMS,
+//           AgencyCommPartner,
+//           AgencyCommSyndicated,
+//           SalesHouseCommMS,
+//           SalesHouseCommSyndicated,
+//           SalesHouseCommPartner,
+//           CouponConsumedAmount,
+//           CouponConsumedAmountMS,
+//           CouponConsumedAmountSyndicated,
+//           CouponConsumedAmountPartner,
+//	       PIType,
+//	       Ipm,
+//	       DeviceType,
+//	       DeviceOS,
+//           CreatedDate,
+//           CreatedBy                    
+//    FROM @FactRev_AccountKey_RevDateKey AS Rev
+//         LEFT OUTER JOIN
+//             @DimSoldBy AS Dsb
+//         ON Rev.SoldBy == Dsb.SoldBy;
+//
+//@FactRev_AccountKey_RevDateKey =
+//    SELECT RevenueRecDateKey,
+//           CampaignId,
+//           AdvAccountId,
+//           PubAccountId,
+//           DistributionChannelId,
+//           MediumId,
+//           PricingModelId,
+//           DeliveryDateKey,
+//           TransactionTypeId,
+//           SoldByKey,
+//           PublisherKey,
+//           Ds.SkuKey,
+//           CurrencyId,
+//           ServiceLevelId,
+//           ImpressionCnt,
+//           //AcquisitionChannelRevenueActual,
+//           GrossAmt,
+//           AgencyCommAmt,
+//           ClickCnt,
+//           SalesHouseCommAmt,
+//           PublisherEarnings,
+//           OperationCostAllowance,
+//           MSRevenue,
+//           RevenueMS,
+//           RevenuePartner,
+//           RevenueSyndicated,
+//           AgencyCommMS,
+//           AgencyCommPartner,
+//           AgencyCommSyndicated,
+//           SalesHouseCommMS,
+//           SalesHouseCommSyndicated,
+//           SalesHouseCommPartner,
+//           CouponConsumedAmount,
+//           CouponConsumedAmountMS,
+//           CouponConsumedAmountSyndicated,
+//           CouponConsumedAmountPartner,
+//	       PIType,
+//	       Ipm,
+//	       DeviceType,
+//	       DeviceOS,
+//           CreatedDate,
+//           CreatedBy                    
+//    FROM @FactRev_AccountKey_RevDateKey AS Rev
+//         LEFT OUTER JOIN
+//             @DimSku AS Ds
+//         ON Rev.Sku == Ds.SkuName;
+//
+//@FactRev_AccountKey_DeliveryDateKey =
+//    SELECT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY RevenueRecDateKey, CampaignId, AdvAccountId,PubAccountId,DistributionChannelId,MediumId,PricingModelId,TransactionTypeId,CurrencyId,ServiceLevelId)) AS Rn,
+//            -1 AS RevenueRecFactKey,
+//           RevenueRecDateKey,
+//           CampaignId,
+//           AdvAccountId,
+//           PubAccountId,
+//           DistributionChannelId,
+//           MediumId,
+//           PricingModelId,
+//           Dt.DateKey AS DeliveryDateKey,
+//           TransactionTypeId,
+//           SoldByKey,
+//           PublisherKey,
+//           SkuKey,
+//           CurrencyId,
+//           ServiceLevelId,
+//           ImpressionCnt,
+//           //AcquisitionChannelRevenueActual,
+//           GrossAmt,
+//           AgencyCommAmt,
+//           ClickCnt,
+//           SalesHouseCommAmt,
+//           PublisherEarnings,
+//           OperationCostAllowance,
+//           MSRevenue,
+//           RevenueMS,
+//           RevenuePartner,
+//           RevenueSyndicated,
+//           AgencyCommMS,
+//           AgencyCommPartner,
+//           AgencyCommSyndicated,
+//           SalesHouseCommMS,
+//           SalesHouseCommSyndicated,
+//           SalesHouseCommPartner,
+//           CouponConsumedAmount,
+//           CouponConsumedAmountMS,
+//           CouponConsumedAmountSyndicated,
+//           CouponConsumedAmountPartner,
+//           PIType,
+//           Ipm,
+//           DeviceType,
+//           DeviceOS,
+//           CreatedDate,
+//           CreatedBy
+//    FROM @FactRev_AccountKey_RevDateKey AS Rev
+//         LEFT OUTER JOIN
+//             @TempDimDate AS Dt
+//         ON Rev.DeliveryDateKey == Dt.SimpleDate;
+//
+//@Temp_Max =
+//    SELECT MAX(RevenueRecFactKey) AS MaxKey,
+//           - 1 AS RevenueRecFactKey
+//    FROM @FactRevenueRevSummary;
+//
+//@FactTable_Full =
+//    SELECT Convert.ToInt32((Di.RevenueRecFactKey + Tm.MaxKey)) AS RevenueRecFactKey,
+//           RevenueRecDateKey,
+//           CampaignId,
+//           AdvAccountId,
+//           PubAccountId,
+//           DistributionChannelId,
+//           MediumId,
+//           PricingModelId,
+//           DeliveryDateKey,
+//           TransactionTypeId,
+//           SoldBy,
+//           PublishedBy,
+//           Sku,
+//           CurrencyId,
+//           ServiceLevelId,
+//           ImpressionCnt,
+//           //AcquisitionChannelRevenueActual,
+//           GrossAmt,
+//           AgencyCommAmt,
+//           ClickCnt,
+//           SalesHouseCommAmt,
+//           PublisherEarnings,
+//           OperationCostAllowance,
+//           MSRevenue,
+//           RevenueMS,
+//           RevenuePartner,
+//           RevenueSyndicated,
+//           AgencyCommMS,
+//           AgencyCommPartner,
+//           AgencyCommSyndicated,
+//           SalesHouseCommMS,
+//           SalesHouseCommSyndicated,
+//           SalesHouseCommPartner,
+//           CouponConsumedAmount,
+//           CouponConsumedAmountMS,
+//           CouponConsumedAmountSyndicated,
+//           CouponConsumedAmountPartner,
+//           PIType,
+//           Ipm,
+//           DeviceType,
+//           DeviceOS,
+//           Di.CreatedDate,
+//           Di.CreatedBy    
+//    FROM @FactRev_AccountKey_DeliveryDateKey AS Di
+//         INNER JOIN
+//             @Temp_Max AS Tm
+//         ON Di.RevenueRecFactKey == Tm.RevenueRecFactKey;
+//
+//INSERT INTO FactRevenueRecSummary
+//SELECT *
+//FROM @FactTable_Full;
+//
+//@FactTable_Full = 
+//SELECT * FROM FactRevenueRecSummary;
+//
+//OUTPUT @FactTable_Full
+//TO @"swebhdfs://ucmdatalakestore.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/FactRevenueRecSummaryIncrementCheck.tsv"
+//USING Outputters.Tsv(quoting : false);
+
+
+//OUTPUT @AnyVariable
+//TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/AnyVariable.tsv"
+//USING Outputters.Tsv(quoting : false);
+

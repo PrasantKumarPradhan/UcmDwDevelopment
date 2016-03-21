@@ -1,0 +1,77 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/Account"+@DateTimeStamp+".tsv";
+DECLARE @OutputStream string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimAccount.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@ExtractAccount =
+    EXTRACT 
+        AccountId int?,
+        AccountNumber string,
+        AccountName string,
+        //ProductCategoryId int?,
+        AdvertiserCustomerId int?,
+        AgencyCustomerId int?,
+        AgencyContactName string,
+        AccountTypeId int? 
+    FROM @InputFilepath
+    USING Extractors.Tsv();
+
+
+@DimAccount =
+    SELECT DISTINCT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY AccountId,
+                    AccountNumber,
+                    AccountName,
+                    //ProductCategoryId,
+                    AdvertiserCustomerId,
+                    AgencyCustomerId,
+                    AccountTypeId)) AS AccountKey,
+                    AccountId,
+                    AccountNumber,
+                    AccountName,
+                    //ProductCategoryId,
+                    AdvertiserCustomerId,
+                    AgencyCustomerId,
+                    AccountTypeId,
+                    1 AS DwVersion,
+                    DateTime.Now AS DwCreatedDate,
+                    Environment.UserDomainName AS DwCreatedBy,
+                    DateTime.Now AS DwUpdatedDate,
+                    Environment.UserDomainName AS DwUpdatedBy
+    FROM @ExtractAccount;
+
+
+DROP TABLE IF EXISTS DimAccount;
+
+CREATE TABLE DimAccount
+(
+    AccountKey int,
+    AccountId int?,
+    AccountNumber string,
+    AccountName string,
+    //ProductCategoryId int?,
+    AdvertiserCustomerId int?,
+    AgencyCustomerId int?,
+    AccountTypeId int?,
+    DwVersion int,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    DwUpdatedDate DateTime,
+    DwUpdatedBy string,
+    INDEX idx1
+    CLUSTERED(AccountKey ASC)
+    PARTITIONED BY
+    HASH(AccountKey)
+
+);
+
+INSERT INTO DimAccount
+SELECT *
+FROM @DimAccount;
+
+
+
+
+
+OUTPUT @DimAccount TO @OutputStream
+USING Outputters.Tsv(quoting : false);

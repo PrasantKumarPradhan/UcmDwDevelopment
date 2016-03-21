@@ -1,0 +1,68 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+
+DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/Medium"+@DateTimeStamp+".tsv";
+DECLARE @OutputStream string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimMedium.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@ExtractMedium =
+    EXTRACT MediumId string,
+            Medium string,
+            RefreshDate DateTime
+    FROM @InputFilepath
+    USING Extractors.Tsv(quoting : false);
+
+
+@DimMedium =
+    SELECT DISTINCT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY MediumId)) AS MediumKey,
+                    MediumId,
+                    Medium,
+                    1 AS DwVersion,
+                    DateTime.Now AS CreatedDate,
+                    Environment.UserDomainName AS CreatedBy,
+                    DateTime.Now AS ModifiedDate,
+                    Environment.UserDomainName AS ModifiedBy
+    FROM @ExtractMedium;
+
+CREATE TABLE DimMedium
+(
+    MediumKey int,
+    MediumId string,
+    Medium string,
+    DwVersion int,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    DwUpdatedDate DateTime,
+    DwUpdatedBy string,
+    INDEX idx1
+    CLUSTERED(MediumKey ASC)
+    PARTITIONED BY
+    HASH(MediumKey)
+
+);
+
+
+INSERT INTO DimMedium
+SELECT *
+FROM @DimMedium;
+
+
+//CREATE TABLE DimMedium
+//(
+//    MediumKey int,
+//    MediumId string,
+//    Medium string,
+//    DwVersion int,
+//    DwCreatedDate DateTime,
+//    DwCreatedBy string,
+//    DwUpdatedDate DateTime,
+//    DwUpdatedBy string,
+//    INDEX idx1
+//    CLUSTERED(MediumKey ASC)
+//    PARTITIONED BY
+//    HASH(MediumKey)
+//
+//);
+
+OUTPUT @DimMedium TO @OutputStream
+USING Outputters.Tsv(quoting : false);

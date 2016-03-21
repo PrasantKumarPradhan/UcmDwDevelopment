@@ -1,0 +1,14 @@
+{
+  "name": "BingAdsAnalyticsLinkedService",
+  "properties": {
+    "type": "AzureDataLakeAnalytics",
+    "typeProperties": {
+      "accountName": "ucmdatalakeanalyticscorp",
+      "authorization": "**********",
+      "sessionId": "**********",
+      "subscriptionId": "4167be12-8ddc-4e8f-9b2b-d77b90bb4c22",
+      "resourceGroupName": "ucmdwresourcegroup"
+    }
+  },
+  "$schema": "http://datafactories.schema.management.azure.com/internalschemas/2015-08-01/Microsoft.DataFactory.linkedservice.json"
+}

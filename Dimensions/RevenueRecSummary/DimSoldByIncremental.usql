@@ -1,0 +1,55 @@
+﻿DECLARE @input_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/REVENUERECSUMMARY/SoldBy.tsv";
+DECLARE @output_filepath string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/DimSoldByDegenerated.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@DeltaDataExtract =
+    EXTRACT SoldBy string            
+               FROM @input_filepath
+    USING Extractors.Tsv();
+
+@SchematizedDim =
+    SELECT *
+    FROM DimSoldByDegenerated;
+
+@Dim_UnmatchedCode = SELECT SoldBy FROM @DeltaDataExtract
+    EXCEPT DISTINCT 
+    SELECT SoldBy FROM @SchematizedDim;
+
+@Temp_Max =
+    SELECT MAX(SoldByKey) AS MaxKey,
+           - 1 AS SoldByKey
+    FROM @SchematizedDim;
+
+@DimRecords_Insert =
+    SELECT ROW_NUMBER() OVER(ORDER BY Pd.SoldBy) AS Rn,
+           - 1 AS SoldByKey,
+            Pd.SoldBy,
+           DateTime.Now AS DwCreatedDate,
+           Environment.UserDomainName AS DwCreatedBy      
+    FROM @Dim_UnmatchedCode AS Du
+         INNER JOIN
+             @DeltaDataExtract AS Pd
+         ON Du.SoldBy == Pd.SoldBy;
+
+@DimTable_Full =    
+    SELECT Convert.ToInt32((Di.Rn + Tm.MaxKey)) AS SoldByKey,
+           SoldBy,
+            Di.DwCreatedDate,
+           Di.DwCreatedBy       
+    FROM @DimRecords_Insert AS Di
+         INNER JOIN
+             @Temp_Max AS Tm
+         ON Di.SoldByKey == Tm.SoldByKey;     
+         
+@Dim_Join = SELECT * FROM @SchematizedDim UNION SELECT * FROM @DimTable_Full;   
+ 
+ 
+INSERT INTO UcmDatawarehouse.dbo.DimSoldByDegenerated
+SELECT *  
+       FROM @DimTable_Full;
+
+
+OUTPUT @Dim_Join
+TO @output_filepath
+USING Outputters.Tsv(quoting:false);

@@ -1,0 +1,151 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+
+DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/Account"+@DateTimeStamp+".tsv";
+DECLARE @OutputFilepath string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimAccount.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@DeltaDataExtract =
+    EXTRACT AccountId int?,
+        AccountNumber string,
+        AccountName string,
+        //ProductCategoryId int?,
+        AdvertiserCustomerId int?,
+        AgencyCustomerId int?,
+        AgencyContactName string,
+        AccountTypeId int?
+            FROM @InputFilepath
+    USING Extractors.Tsv();
+
+@SchematizedDim =
+    SELECT AccountKey,
+           AccountId,
+           AccountNumber,
+           AccountName,
+           //ProductCategoryId,
+           AdvertiserCustomerId,
+           AgencyCustomerId,
+           AccountTypeId,
+           DwVersion,
+           DwCreatedDate,
+           DwCreatedBy,
+           DwUpdatedDate,
+           DwUpdatedBy
+    FROM DimAccount;
+
+@Dim_UnmatchedCode = SELECT AccountId FROM @DeltaDataExtract
+    EXCEPT DISTINCT 
+    SELECT AccountId FROM @SchematizedDim;
+
+@Temp_Max =
+    SELECT MAX(AccountKey) AS MaxKey,
+           - 1 AS AccountKey
+    FROM @SchematizedDim;
+
+@DimRecords_Insert =
+    SELECT ROW_NUMBER() OVER(ORDER BY Pd.AccountId) AS Rn,
+           - 1 AS AccountKey,
+           Pd.AccountId,
+           AccountNumber,
+           AccountName,
+           //ProductCategoryId,
+           AdvertiserCustomerId,
+           AgencyCustomerId,
+           AccountTypeId,
+           1 AS DwVersion,
+           DateTime.Now AS DwCreatedDate,
+           Environment.UserDomainName AS DwCreatedBy,
+           DateTime.Now AS DwModifiedDate,
+           Environment.UserDomainName AS DwModifiedBy
+    FROM @Dim_UnmatchedCode AS Du
+         INNER JOIN
+             @DeltaDataExtract AS Pd
+         ON Du.AccountId == Pd.AccountId;
+
+@DimType2_Update =
+    SELECT AccountKey,
+           De.AccountId,
+           Td.AccountNumber,
+           Td.AccountName,
+           //Td.ProductCategoryId,
+           Td.AdvertiserCustomerId,
+           Td.AgencyCustomerId,
+           Td.AccountTypeId,
+           (De.DwVersion + 1) AS DwVersion,
+           DwCreatedDate,
+           DwCreatedBy,
+           DateTime.Now AS DwModifiedDate,
+           Environment.UserDomainName AS DwModifiedBy
+    FROM @DeltaDataExtract AS Td
+         INNER JOIN
+             @SchematizedDim AS De
+         ON De.AccountId == Td.AccountId
+    WHERE De.AccountNumber != Td.AccountNumber
+          OR De.AccountName != Td.AccountName
+          //OR De.ProductCategoryId != Td.ProductCategoryId
+          OR De.AdvertiserCustomerId != Td.AdvertiserCustomerId
+          OR De.AgencyCustomerId != Td.AgencyCustomerId
+          OR De.AccountTypeId != Td.AccountTypeId;
+
+
+@DimUnmatchedSchematized =
+    SELECT AccountId
+    FROM @SchematizedDim
+    EXCEPT DISTINCT
+    SELECT AccountId
+    FROM @DimType2_Update;
+
+@DimSchematizedRecords =
+    SELECT AccountKey,
+           De.AccountId,
+           AccountNumber,
+           AccountName,
+           //ProductCategoryId,
+           AdvertiserCustomerId,
+           AgencyCustomerId,
+           AccountTypeId,
+           DwVersion,
+           DwCreatedDate,
+           DwCreatedBy,
+           DwUpdatedDate,
+           DwUpdatedBy
+    FROM @SchematizedDim AS De
+         INNER JOIN
+             @DimUnmatchedSchematized AS Ds
+         ON De.AccountId == Ds.AccountId;
+
+@DimTable_Full =
+    SELECT *
+    FROM @DimSchematizedRecords
+    UNION DISTINCT
+    SELECT *
+    FROM @DimType2_Update
+    UNION DISTINCT
+    SELECT Convert.ToInt32((Di.Rn + Tm.MaxKey)) AS AccountKey,
+           AccountId,
+           AccountNumber,
+           AccountName,
+           //ProductCategoryId,
+           AdvertiserCustomerId,
+           AgencyCustomerId,
+           AccountTypeId,
+           Di.DwVersion,
+           Di.DwCreatedDate,
+           Di.DwCreatedBy,
+           Di.DwModifiedDate,
+           Di.DwModifiedBy
+    FROM @DimRecords_Insert AS Di
+         INNER JOIN
+             @Temp_Max AS Tm
+         ON Di.AccountKey == Tm.AccountKey;        
+
+TRUNCATE TABLE DimAccount; 
+ 
+INSERT INTO UcmDatawarehouse.dbo.DimAccount
+SELECT *  
+       FROM @DimTable_Full;
+
+
+OUTPUT @DimTable_Full
+TO @OutputFilepath
+USING Outputters.Tsv(quoting:false);

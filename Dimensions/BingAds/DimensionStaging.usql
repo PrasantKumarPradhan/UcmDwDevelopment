@@ -1,0 +1,215 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+
+DECLARE @DeviceType_input_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/RVR/DeviceType"+@DateTimeStamp+".tsv";
+DECLARE @PricingLevel_input_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/RVR/PricingLevel"+@DateTimeStamp+".tsv";
+DECLARE @input_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/RVR/RvRData"+@DateTimeStamp+".tsv";
+DECLARE @RevSumCategory_input_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/RVR/RevSumCategory"+@DateTimeStamp+".tsv";
+DECLARE @RevSumDivision_input_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/RVR/RevSumDivision"+@DateTimeStamp+".tsv";
+DECLARE @ProductFamily_input_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/RVR/ProductFamily"+@DateTimeStamp+".tsv";
+DECLARE @RevenueType_input_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/RVR/RevenueType"+@DateTimeStamp+".tsv";
+DECLARE @srpvData_input_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/RVR/SrpvData"+@DateTimeStamp+".tsv";
+
+DECLARE @DeviceType_output_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/DeviceType.tsv";
+DECLARE @PricingLevel_output_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/PricingLevel.tsv";
+DECLARE @ProductFamily_output_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/ProductFamily.tsv";
+DECLARE @RevSumCategory_output_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/RevSumCategory.tsv";
+DECLARE @RevSumDivision_output_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/RevSumDivision.tsv";
+DECLARE @FactRvR_output_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/FactRvR.tsv";
+DECLARE @RevenueType_output_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/RevenueType.tsv";
+DECLARE @Srpv_output_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/SrpvData.tsv";
+//DECLARE @AccountType_output_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/AccountType.tsv";
+
+
+
+
+@RvRTemp =
+    EXTRACT AccountCode string,
+            CalendarYear string,
+            CalendarMonth string,
+            AccountClass string,
+            AccountSubClass string,
+            DeviceType string,
+            PricingLevel string,
+            ProductFamilyCode string,
+            RevSumDivisionCode string,
+            RevSumCategoryCode string,
+            Actual string,
+            Budget string,
+            Forecast string
+    FROM @input_filepath
+    USING Extractors.Tsv(quoting : false);
+
+
+@FactRvr =
+    SELECT AccountCode.Replace('"', ' ').Trim() AS AccountCode,
+           (CalendarYear.Replace('"', ' ').Trim()).Substring(CalendarYear.Length - 6) AS CalendarYear,
+           (CalendarMonth.Replace('"', ' ').Trim()) AS CalendarMonth,
+           AccountClass.Replace('"', ' ').Trim() AS AccountClass,
+           AccountSubClass.Replace('"', ' ').Trim() AS AccountSubClass,
+           DeviceType.Replace('"', ' ').Trim() AS DeviceType,
+           PricingLevel.Replace('"', ' ').Trim() AS PricingLevel,
+           ProductFamilyCode.Replace('"', ' ').Trim() AS ProductFamilyCode,
+           RevSumDivisionCode.Replace('"', ' ').Trim() AS RevSumDivisionCode,
+           RevSumCategoryCode.Replace('"', ' ').Trim() AS RevSumCategoryCode,
+           (Actual.Replace('"', ' ').Trim()) AS Actual,
+           (Budget.Replace('"', ' ').Trim()) AS Budget,
+           (Forecast.Replace('"', ' ').Trim()) AS Forecast
+    FROM @RvRTemp;
+
+
+@SrpvTemp =
+    EXTRACT CalendarYear string,
+            CalendarMonth string,
+            GroupName string,
+            DeviceType string,
+            PricingLevel string,
+            ProductFamilyCode string,
+            RevSumDivisionCode string,
+            RevSumCategoryCode string,
+            Actual string,
+            Budget string,
+            Forecast string
+    FROM @srpvData_input_filepath
+    USING Extractors.Tsv(quoting : false);
+
+
+@FactSrpv =
+    SELECT (CalendarYear.Replace('"', ' ').Trim()).Substring(CalendarYear.Length - 6) AS CalendarYear,
+           (CalendarMonth.Replace('"', ' ').Trim()) AS CalendarMonth,
+           GroupName.Replace('"', ' ').Trim() AS GroupName,
+           DeviceType.Replace('"', ' ').Trim() AS DeviceType,
+           PricingLevel.Replace('"', ' ').Trim() AS PricingLevel,
+           ProductFamilyCode.Replace('"', ' ').Trim() AS ProductFamilyCode,
+           RevSumDivisionCode.Replace('"', ' ').Trim() AS RevSumDivisionCode,
+           RevSumCategoryCode.Replace('"', ' ').Trim() AS RevSumCategoryCode,
+           (Actual.Replace('"', ' ').Trim()) AS Actual,
+           (Budget.Replace('"', ' ').Trim()) AS Budget,
+           (Forecast.Replace('"', ' ').Trim()) AS Forecast
+    FROM @SrpvTemp;
+
+//
+//@TempAccountCode =
+//    SELECT DISTINCT AccountCode.Replace('"', ' ').Trim() AS AccountCode,
+//                    "" AS AccoountCodeDesc
+//    FROM @RvRTemp;
+
+//@TempAccountType =
+//    SELECT DISTINCT AccountClass.Replace('"', ' ').Trim() AS AccountClass,
+//                    AccountSubClass.Replace('"', ' ').Trim() AS AccountSubClass
+//    FROM @RvRTemp;
+
+@TempDeviceType =
+    EXTRACT DeviceType string,
+            RefreshDate string
+    FROM @DeviceType_input_filepath
+    USING Extractors.Tsv();
+
+@DeviceType =
+    SELECT DISTINCT DeviceType.Replace('"',' ').Trim() AS DeviceType,
+                    DateTime.Parse(RefreshDate) AS RefreshDate
+    FROM @TempDeviceType;
+
+
+@TempPricingLevel =
+    EXTRACT PricingLevel string,
+            RefreshDate string
+    FROM @PricingLevel_input_filepath
+    USING Extractors.Tsv();
+
+@PricingLevel =
+    SELECT DISTINCT PricingLevel.Replace('"',' ').Trim() AS PricingLevel,
+                    DateTime.Parse(RefreshDate) AS RefreshDate
+    FROM @TempPricingLevel;
+
+
+@ProductFamily =
+    EXTRACT ProductFamilyCode string,
+            ProductFamily string,
+            RefreshDate string
+    FROM @ProductFamily_input_filepath
+    USING Extractors.Tsv(quoting : false);
+
+
+@TempProductFamily =
+    SELECT ProductFamilyCode.Replace('"', ' ').Trim() AS ProductFamilyCode,
+           ProductFamily.Replace('"', ' ').Trim() AS ProductFamily,
+           Convert.ToDateTime(RefreshDate.Replace('"', ' ').Trim()) AS RefreshDate
+    FROM @ProductFamily;
+
+
+@RevenueType =
+    EXTRACT AccountClass string,
+            AccountSubClass string,
+            GroupName string,
+            RefreshDate string
+    FROM @RevenueType_input_filepath
+    USING Extractors.Tsv(quoting : false);
+
+
+@TempRevenueType =
+    SELECT AccountClass.Replace('"', ' ').Trim() AS AccountClass,
+           AccountSubClass.Replace('"', ' ').Trim() AS AccountSubClass,
+           GroupName.Replace('"', ' ').Trim() AS GroupName
+    FROM @RevenueType;
+
+@RevSumCategory =
+    EXTRACT RevSumCategoryCode string,
+            RevSumCategory string,
+            RefreshDate string          
+               FROM @RevSumCategory_input_filepath
+    USING Extractors.Tsv(quoting : false);
+
+@RevSumCategoryTemp =
+    SELECT RevSumCategoryCode.Replace('"', ' ').Trim() AS RevSumCategoryCode,
+           RevSumCategory.Replace('"', ' ').Trim() AS RevSumCategory,
+           Convert.ToDateTime(RefreshDate.Replace('"', ' ').Trim()) AS RefreshDate
+    FROM @RevSumCategory;
+
+
+
+@RevSumDivisionTemp =
+    EXTRACT RevSumDivisionCode string,
+            RevSumDivision string,
+            RefreshDate string          
+               FROM @RevSumDivision_input_filepath
+    USING Extractors.Tsv(quoting : false);
+
+@DimRevSumDivision =
+    SELECT RevSumDivisionCode.Replace('"', ' ').Trim() AS RevSumDivisionCode,
+           RevSumDivision.Replace('"', ' ').Trim() AS RevSumDivision,
+           Convert.ToDateTime(RefreshDate.Replace('"', ' ').Trim()) AS RefreshDate
+    FROM @RevSumDivisionTemp;
+
+
+//CREATE DATABASE UcmDatawarehouse;
+OUTPUT @DeviceType TO @DeviceType_output_filepath
+USING Outputters.Tsv(quoting : false);
+
+OUTPUT @PricingLevel TO @PricingLevel_output_filepath
+USING Outputters.Tsv(quoting : false);
+
+//OUTPUT @TempAccountCode TO @AccountCode_output_filepath
+//USING Outputters.Tsv(quoting : false);
+
+OUTPUT @RevSumCategoryTemp TO @RevSumCategory_output_filepath
+USING Outputters.Tsv(quoting : false);
+
+OUTPUT @DimRevSumDivision TO @RevSumDivision_output_filepath
+USING Outputters.Tsv(quoting : false);
+
+OUTPUT @FactRvr TO @FactRvR_output_filepath
+USING Outputters.Tsv(quoting : false);
+
+OUTPUT @TempProductFamily TO @ProductFamily_output_filepath
+USING Outputters.Tsv(quoting : false);
+
+OUTPUT @TempRevenueType TO @RevenueType_output_filepath
+USING Outputters.Tsv(quoting : false);
+
+OUTPUT @FactSrpv TO @Srpv_output_filepath
+USING Outputters.Tsv(quoting : false);
+
+
+
+
+

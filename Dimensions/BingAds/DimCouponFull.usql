@@ -1,0 +1,54 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+DECLARE @input_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/Coupon"+@DateTimeStamp+".tsv";
+
+DECLARE @output_filepath string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimCoupon.tsv";
+
+
+USE DATABASE UcmDatawarehouse;
+
+@TempCoupon =
+    EXTRACT CouponId int,
+	CouponCode string,
+	RedemptionCount int,
+	CouponBatchId int	
+	FROM @input_filepath
+    USING Extractors.Tsv();
+
+@DimCoupon =
+    SELECT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY CouponId))  AS CouponKey,
+           *,
+           1 AS TableVersion,
+          DateTime.Now AS CreatedDate,
+                    Environment.UserDomainName AS CreatedBy,
+                    DateTime.Now AS ModifiedDate,
+                    Environment.UserDomainName AS ModifiedBy  
+    FROM @TempCoupon;
+
+DROP TABLE IF EXISTS DimCoupon;
+
+CREATE TABLE DimCoupon
+(
+CouponKey int,
+SourceCouponId int,
+	CouponCode string,
+	RedemptionCount int,
+	CouponBatchId int,
+    TableVersion int,
+	DWCreatedDate DateTime,
+    DWCreatedBy   string,
+    DWUpdatedDate DateTime,
+    DWUpdatedBy   string,
+    INDEX idx1
+    CLUSTERED(CouponKey ASC)
+    PARTITIONED BY
+    HASH(CouponKey)
+);
+ 
+ 
+INSERT INTO DimCoupon
+SELECT *  
+       FROM @DimCoupon;
+
+OUTPUT @DimCoupon
+TO @output_filepath
+USING Outputters.Tsv(quoting:false); 

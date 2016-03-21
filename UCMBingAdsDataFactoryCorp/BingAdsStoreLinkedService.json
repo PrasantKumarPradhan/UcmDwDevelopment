@@ -1,0 +1,15 @@
+{
+  "name": "BingAdsStoreLinkedService",
+  "properties": {
+    "type": "AzureDataLakeStore",
+    "typeProperties": {
+      "dataLakeStoreUri": "https://ucmdatalakestorecorp.azuredatalakestore.net/webhdfs/v1",
+      "accountName": "ucmdatalakestore",
+      "authorization": "**********",
+      "sessionId": "**********",
+      "subscriptionId": "4167be12-8ddc-4e8f-9b2b-d77b90bb4c22",
+      "resourceGroupName": "ucmdwresourcegroup"
+    }
+  },
+  "$schema": "http://datafactories.schema.management.azure.com/internalschemas/2015-08-01/Microsoft.DataFactory.linkedservice.json"
+}

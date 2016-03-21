@@ -1,0 +1,285 @@
+{
+  "name": "RvrSorceFileCopyPipeline",
+  "properties": {
+    "description": "",
+    "activities": [
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "FileSystemSource"
+          },
+          "sink": {
+            "type": "AzureDataLakeStoreSink",
+            "writeBatchSize": 0,
+            "writeBatchTimeout": "00:00:00"
+          }
+        },
+        "inputs": [
+          {
+            "name": "DeviceTypeSourceDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DeviceTypeStageDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "10:00:00",
+          "concurrency": 1,
+          "executionPriorityOrder": "NewestFirst",
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "DeviceTypeCopyTemplate"
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "FileSystemSource"
+          },
+          "sink": {
+            "type": "AzureDataLakeStoreSink",
+            "writeBatchSize": 0,
+            "writeBatchTimeout": "00:00:00"
+          }
+        },
+        "inputs": [
+          {
+            "name": "PricingLevelSourceDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "PricingLevelStageDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "10:00:00",
+          "concurrency": 1,
+          "executionPriorityOrder": "NewestFirst",
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "PricingLevelCopyTemplate"
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "FileSystemSource"
+          },
+          "sink": {
+            "type": "AzureDataLakeStoreSink",
+            "writeBatchSize": 0,
+            "writeBatchTimeout": "00:00:00"
+          }
+        },
+        "inputs": [
+          {
+            "name": "ProductFamilySourceDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "ProductFamilyStageDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "10:00:00",
+          "concurrency": 1,
+          "executionPriorityOrder": "NewestFirst",
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "ProductFamilyCopyTemplate"
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "FileSystemSource"
+          },
+          "sink": {
+            "type": "AzureDataLakeStoreSink",
+            "writeBatchSize": 0,
+            "writeBatchTimeout": "00:00:00"
+          }
+        },
+        "inputs": [
+          {
+            "name": "RevSumCategorySourceDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "RevSumCategoryStageDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "10:00:00",
+          "concurrency": 1,
+          "executionPriorityOrder": "NewestFirst",
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "RevSumCategoryCopyTemplate"
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "FileSystemSource"
+          },
+          "sink": {
+            "type": "AzureDataLakeStoreSink",
+            "writeBatchSize": 0,
+            "writeBatchTimeout": "00:00:00"
+          }
+        },
+        "inputs": [
+          {
+            "name": "RevSumDivisionSourceDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "RevSumDivisionStageDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "10:00:00",
+          "concurrency": 1,
+          "executionPriorityOrder": "NewestFirst",
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "RevSumDivisionCopyTemplate"
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "FileSystemSource"
+          },
+          "sink": {
+            "type": "AzureDataLakeStoreSink",
+            "writeBatchSize": 0,
+            "writeBatchTimeout": "00:00:00"
+          }
+        },
+        "inputs": [
+          {
+            "name": "RvrDataSourceDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "RvrDataStageDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "10:00:00",
+          "concurrency": 1,
+          "executionPriorityOrder": "NewestFirst",
+          "retry": 1
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "RvrDataCopyTemplate"
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "FileSystemSource"
+          },
+          "sink": {
+            "type": "AzureDataLakeStoreSink",
+            "writeBatchSize": 0,
+            "writeBatchTimeout": "00:00:00"
+          }
+        },
+        "inputs": [
+          {
+            "name": "RevenueTypeSourceDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "RevenueTypeStageDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "10:00:00",
+          "concurrency": 1,
+          "executionPriorityOrder": "NewestFirst",
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "RevenueTypeCopyTemplate"
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "FileSystemSource"
+          },
+          "sink": {
+            "type": "AzureDataLakeStoreSink",
+            "writeBatchSize": 0,
+            "writeBatchTimeout": "00:00:00"
+          }
+        },
+        "inputs": [
+          {
+            "name": "SrpvDataSourceDataset"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "SrpvDataStageDataset"
+          }
+        ],
+        "policy": {
+          "timeout": "10:00:00",
+          "concurrency": 1,
+          "executionPriorityOrder": "NewestFirst",
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "SrpvDataCopyTemplate"
+      }
+    ],
+    "start": "2016-03-16T00:00:00Z",
+    "end": "2016-03-16T01:00:00Z",
+    "isPaused": false,
+    "pipelineMode": "Scheduled"
+  },
+  "$schema": "http://datafactories.schema.management.azure.com/internalschemas/2015-08-01/Microsoft.DataFactory.pipeline.json"
+}

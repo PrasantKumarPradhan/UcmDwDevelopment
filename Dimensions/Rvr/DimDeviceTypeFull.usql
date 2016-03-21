@@ -1,0 +1,62 @@
+﻿DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/DeviceType.tsv";
+DECLARE @OutputStream string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/RVR/DimDeviceTypeDegenerated.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@TempDeviceType =
+    EXTRACT DeviceType string,
+            RefreshDate DateTime
+    FROM @InputFilepath
+    USING Extractors.Tsv(silent : true);
+
+@DimDeviceType =
+    SELECT DISTINCT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY DeviceType)) AS DeviceTypeKey,
+                    DeviceType,
+                    DateTime.Now AS CreatedDate,
+                    Environment.UserDomainName AS CreatedBy
+    FROM @TempDeviceType;
+
+
+
+DROP TABLE IF EXISTS DimDeviceTypeDegeneratedTemp;
+
+CREATE TABLE DimDeviceTypeDegeneratedTemp
+(
+    DeviceTypeKey int,
+    DeviceType string,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    INDEX idx1
+    CLUSTERED(DeviceTypeKey ASC)
+    PARTITIONED BY
+    HASH(DeviceTypeKey)
+
+);
+
+INSERT INTO DimDeviceTypeDegeneratedTemp
+SELECT *
+FROM DimDeviceTypeDegenerated;
+
+
+DROP TABLE IF EXISTS DimDeviceTypeDegenerated;
+
+CREATE TABLE DimDeviceTypeDegenerated
+(
+    DeviceTypeKey int,
+    DeviceType string,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    INDEX idx1
+    CLUSTERED(DeviceTypeKey ASC)
+   PARTITIONED BY
+   HASH(DeviceTypeKey)
+
+);
+
+INSERT INTO DimDeviceTypeDegenerated
+SELECT *
+FROM @DimDeviceType;
+
+
+OUTPUT @DimDeviceType TO @OutputStream
+USING Outputters.Tsv(quoting : false);

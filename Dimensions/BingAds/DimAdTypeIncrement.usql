@@ -1,0 +1,108 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+
+DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/AdType"+@DateTimeStamp+".tsv";
+DECLARE @OutputFilepath string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimAdType.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@DeltaDataExtract =
+    EXTRACT AdTypeId int,
+       AdTypeName string,
+       CreatedDTim DateTime
+    FROM @InputFilepath
+    USING Extractors.Tsv(silent : true);
+
+@SchematizedDim =
+    SELECT *
+    FROM DimAdType;
+
+@Dim_UnmatchedCode = SELECT AdTypeId FROM @DeltaDataExtract
+    EXCEPT DISTINCT 
+    SELECT AdTypeId FROM @SchematizedDim;
+
+@Temp_Max =
+    SELECT MAX(AdTypeKey) AS MaxKey,
+           - 1 AS AdTypeKey
+    FROM @SchematizedDim;
+
+@DimRecords_Insert =
+    SELECT ROW_NUMBER() OVER(ORDER BY Pd.AdTypeId) AS Rn,
+           - 1 AS AdTypeKey,
+           Pd.AdTypeId,
+           AdTypeName,
+           1 AS DwVersion,
+           DateTime.Now AS DwCreatedDate,
+           Environment.UserDomainName AS DwCreatedBy,
+           DateTime.Now AS DwModifiedDate,
+           Environment.UserDomainName AS DwModifiedBy
+    FROM @Dim_UnmatchedCode AS Du
+         INNER JOIN
+             @DeltaDataExtract AS Pd
+         ON Du.AdTypeId == Pd.AdTypeId;
+
+@DimType2_Update =
+    SELECT AdTypeKey,
+           De.AdTypeId,
+           Td.AdTypeName,
+           (De.DwVersion + 1) AS DwVersion,
+           DwCreatedDate,
+           DwCreatedBy,
+           DateTime.Now AS DwModifiedDate,
+           Environment.UserDomainName AS DwModifiedBy
+    FROM @DeltaDataExtract AS Td
+         INNER JOIN
+             @SchematizedDim AS De
+         ON De.AdTypeId == Td.AdTypeId
+    WHERE De.AdTypeName != Td.AdTypeName;
+
+@DimUnmatchedSchematized =
+    SELECT AdTypeId
+    FROM @SchematizedDim
+    EXCEPT DISTINCT
+    SELECT AdTypeId
+    FROM @DimType2_Update;
+
+@DimSchematizedRecords =
+    SELECT AdTypeKey,
+           De.AdTypeId,
+           AdTypeName,
+           DwVersion,
+           DwCreatedDate,
+           DwCreatedBy,
+           DwUpdatedDate,
+           DwUpdatedBy
+    FROM @SchematizedDim AS De
+         INNER JOIN
+             @DimUnmatchedSchematized AS Ds
+         ON De.AdTypeId == Ds.AdTypeId;
+
+@DimTable_Full =
+    SELECT *
+    FROM @DimSchematizedRecords
+    UNION DISTINCT
+    SELECT *
+    FROM @DimType2_Update
+    UNION DISTINCT
+    SELECT Convert.ToInt32((Di.Rn + Tm.MaxKey)) AS AdTypeKey,
+           AdTypeId,
+           AdTypeName,
+           Di.DwVersion,
+           Di.DwCreatedDate,
+           Di.DwCreatedBy,
+           Di.DwModifiedDate,
+           Di.DwModifiedBy
+    FROM @DimRecords_Insert AS Di
+         INNER JOIN
+             @Temp_Max AS Tm
+         ON Di.AdTypeKey == Tm.AdTypeKey;        
+
+TRUNCATE TABLE DimAdType; 
+ 
+INSERT INTO UcmDatawarehouse.dbo.DimAdType
+SELECT *  
+       FROM @DimTable_Full;
+
+
+OUTPUT @DimTable_Full
+TO @OutputFilepath
+USING Outputters.Tsv(quoting:false);

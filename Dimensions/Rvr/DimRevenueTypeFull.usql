@@ -1,0 +1,68 @@
+﻿DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/RevenueType.tsv";
+DECLARE @OutputStream string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/RVR/DimRevenueType.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@RevenueType =
+    EXTRACT AccountClass string,
+            AccountSubClass string,
+            GroupName string
+    FROM @InputFilepath 
+    USING Extractors.Tsv(quoting : false);
+
+
+@DimRevenueType =
+    SELECT DISTINCT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY AccountClass,AccountSubClass,GroupName)) AS RevenueTypeKey,
+                    AccountClass,
+                    AccountSubClass,
+                    GroupName,
+                    DateTime.Now AS CreatedDate,
+                    Environment.UserDomainName AS CreatedBy
+    FROM @RevenueType;
+
+
+DROP TABLE IF EXISTS DimRevenueTypeDegeneratedTemp;
+
+CREATE TABLE DimRevenueTypeDegeneratedTemp
+(
+    RevenueTypeKey int,
+    AccountClass string,
+    AccountSubClass string,
+    GroupName string,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    INDEX idx1
+    CLUSTERED(RevenueTypeKey ASC)
+    PARTITIONED BY
+    HASH(RevenueTypeKey)
+
+);
+
+INSERT INTO DimRevenueTypeDegeneratedTemp
+SELECT *
+FROM @DimRevenueType;
+
+DROP TABLE IF EXISTS DimRevenueTypeDegenerated;
+
+CREATE TABLE DimRevenueTypeDegenerated
+(
+    RevenueTypeKey int,
+    AccountClass string,
+    AccountSubClass string,
+    GroupName string,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    INDEX idx1
+    CLUSTERED(RevenueTypeKey ASC)
+    PARTITIONED BY
+    HASH(RevenueTypeKey)
+
+);
+
+INSERT INTO DimRevenueTypeDegenerated
+SELECT *
+FROM @DimRevenueType;
+
+
+OUTPUT @DimRevenueType TO @OutputStream 
+USING Outputters.Tsv(quoting : false);

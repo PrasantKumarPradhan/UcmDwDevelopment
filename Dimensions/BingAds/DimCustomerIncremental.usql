@@ -1,0 +1,162 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+
+DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/Customer"+@DateTimeStamp+".tsv";
+DECLARE @OutputFilepath string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimCustomer.tsv";
+
+
+USE DATABASE UcmDatawarehouse;
+
+@DeltaDataExtract =
+    EXTRACT CustomerId int,
+            CustomerName string,
+            CustomerTypeId int,
+            CustomerNumber string,
+            FraudStatusId string,
+            FraudReasonCodeId string,
+            FraudStatusChangeDateTime string
+    FROM @InputFilepath
+    USING Extractors.Tsv(silent : true);
+
+@SchematizedDim =
+    SELECT *
+    FROM DimCustomer;
+
+@Dim_UnmatchedCode = SELECT CustomerId FROM @DeltaDataExtract
+    EXCEPT DISTINCT 
+    SELECT CustomerId FROM @SchematizedDim;
+
+@Temp_Max =
+    SELECT MAX(CustomerKey) AS MaxKey,
+           - 1 AS CustomerKey
+    FROM @SchematizedDim;
+
+@DimRecords_Insert =
+    SELECT ROW_NUMBER() OVER(ORDER BY Pd.CustomerId) AS Rn,
+           - 1 AS CustomerKey,
+           Pd.CustomerId,
+           CustomerName,
+           CustomerTypeId,
+           CustomerNumber,
+           FraudStatusId,
+           FraudReasonCodeId,
+           1 AS DwVersion,
+           DateTime.Now AS CreatedDate,
+           Environment.UserDomainName AS CreatedBy,
+           DateTime.Now AS ModifiedDate,
+           Environment.UserDomainName AS ModifiedBy
+    FROM @Dim_UnmatchedCode AS Du
+         INNER JOIN
+             @DeltaDataExtract AS Pd
+         ON Pd.CustomerId == Du.CustomerId;
+
+
+@DimType2_Update =
+    SELECT CustomerKey,
+           Td.CustomerId,
+           Td.CustomerName,
+           Td.CustomerTypeId,
+           Td.CustomerNumber,
+           Td.FraudStatusId,
+           Td.FraudReasonCodeId,
+           (De.DwVersion + 1) AS DwVersion,
+           DwCreatedDate,
+           DwCreatedBy,
+           DateTime.Now AS ModifiedDate,
+           Environment.UserDomainName AS ModifiedBy
+    FROM @DeltaDataExtract AS Td
+         INNER JOIN
+             @SchematizedDim AS De
+         ON
+         De.CustomerId == Td.CustomerId
+    WHERE De.CustomerName.Trim().ToUpper() != Td.CustomerName.Trim().ToUpper() OR De.CustomerNumber.Trim().ToUpper() != Td.CustomerNumber.Trim().ToUpper()
+          OR De.FraudStatusId != Td.FraudStatusId OR De.FraudReasonCodeId != Td.FraudReasonCodeId OR De.CustomerTypeId != Td.CustomerTypeId;
+
+
+@DimUnmatchedSchematized =
+    SELECT CustomerId
+    FROM @SchematizedDim
+    EXCEPT DISTINCT
+    SELECT CustomerId
+    FROM @DimType2_Update;
+
+
+@DimSchematizedRecords =
+    SELECT CustomerKey,
+           De.CustomerId,
+           CustomerName,
+           CustomerTypeId,
+           CustomerNumber,
+           FraudStatusId,
+           FraudReasonCodeId,
+           DwVersion,
+           DwCreatedDate,
+           DwCreatedBy,
+           DwUpdatedDate,
+           DwUpdatedBy
+    FROM @SchematizedDim AS De
+         INNER JOIN
+             @DimUnmatchedSchematized AS Ds
+         ON De.CustomerId == Ds.CustomerId;
+
+
+@DimTable_Full =
+    SELECT *
+    FROM @DimSchematizedRecords
+    UNION DISTINCT
+    SELECT *
+    FROM @DimType2_Update
+    UNION DISTINCT
+    SELECT Convert.ToInt32((Di.Rn + Tm.MaxKey)) AS CustomerKey,
+           CustomerId,
+           CustomerName,
+           CustomerTypeId,
+           CustomerNumber,
+           FraudStatusId,
+           FraudReasonCodeId,
+           Di.DwVersion,
+           Di.CreatedDate,
+           Di.CreatedBy,
+           Di.ModifiedDate,
+           Di.ModifiedBy
+    FROM @DimRecords_Insert AS Di
+         INNER JOIN
+             @Temp_Max AS Tm
+         ON Di.CustomerKey == Tm.CustomerKey;
+
+
+DROP TABLE IF EXISTS  UcmDatawarehouse.dbo.DimCustomer;
+CREATE TABLE UcmDatawarehouse.dbo.DimCustomer
+(
+    CustomerKey int,
+    CustomerId int,
+    CustomerName string,
+    CustomerTypeId int,
+    CustomerNumber string,
+    FraudStatusId string,
+    FraudReasonCodeId string,
+    DwVersion int,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    DwUpdatedDate DateTime,
+    DwUpdatedBy string,
+    INDEX idx1
+    CLUSTERED(CustomerKey ASC)
+    PARTITIONED BY
+    HASH(CustomerKey)
+
+);
+
+
+INSERT INTO UcmDatawarehouse.dbo.DimCustomer
+SELECT *
+FROM @DimTable_Full;
+
+
+OUTPUT @DimTable_Full
+TO @OutputFilepath
+USING Outputters.Tsv(quoting : false);
+
+
+
+
+

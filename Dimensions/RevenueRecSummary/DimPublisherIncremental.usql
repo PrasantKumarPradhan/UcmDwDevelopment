@@ -1,0 +1,59 @@
+﻿DECLARE @InputFilePath string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/REVENUERECSUMMARY/Publisher.tsv";
+DECLARE @OutputFilePath string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/DimPublisherDegenerated.tsv";
+
+USE DATABASE UcmDatawarehouse;
+//10,8,2000000
+@DeltaDataExtract =
+    EXTRACT  PublisherName string  
+    FROM @InputFilePath
+    USING Extractors.Tsv();
+
+@SchematizedDim =
+    SELECT *
+    FROM DimPublisherDegenerated;
+
+@Dim_UnmatchedCode = SELECT PublisherName FROM @DeltaDataExtract
+    EXCEPT DISTINCT 
+    SELECT PublisherName FROM @SchematizedDim;
+
+@Temp_Max =
+    SELECT MAX(PublisherKey) AS MaxKey,
+           - 1 AS PublisherKey
+    FROM @SchematizedDim;
+
+@DimRecords_Insert =
+    SELECT ROW_NUMBER() OVER(ORDER BY Pd.PublisherName) AS Rn,
+           - 1 AS PublisherKey,
+           Pd.PublisherName,                
+            DateTime.Now AS DwCreatedDate,
+           Environment.UserDomainName AS DwCreatedBy
+         FROM @Dim_UnmatchedCode AS Du
+         INNER JOIN
+             @DeltaDataExtract AS Pd
+         ON Pd.PublisherName == Du.PublisherName;
+
+@DimTable_Full =
+    SELECT Convert.ToInt32((Di.Rn + Tm.MaxKey)) AS PublisherKey,
+            PublisherName,       
+           Di.DwCreatedDate,
+           Di.DwCreatedBy      
+    FROM @DimRecords_Insert AS Di
+         INNER JOIN
+             @Temp_Max AS Tm
+         ON Di.PublisherKey == Tm.PublisherKey;
+         
+@Dim_Join = SELECT * FROM @SchematizedDim UNION SELECT * FROM @DimTable_Full;
+
+
+INSERT INTO DimPublisherDegenerated
+SELECT *  
+       FROM @DimTable_Full;
+
+OUTPUT @Dim_Join
+TO @OutputFilePath
+USING Outputters.Tsv(quoting : false);
+
+
+
+
+

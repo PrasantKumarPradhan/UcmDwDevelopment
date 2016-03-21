@@ -1,0 +1,16 @@
+{
+  "name": "DimPublisherSqlDwOutputDataset",
+  "properties": {
+    "published": false,
+    "type": "AzureSqlDWTable",
+    "linkedServiceName": "UcmAzureSqlDwLinkedService",
+    "typeProperties": {
+      "tableName": "dbo.DimPublisher"
+    },
+    "availability": {
+      "frequency": "Hour",
+      "interval": 1
+    }
+  },
+  "$schema": "http://datafactories.schema.management.azure.com/internalschemas/2015-08-01/Microsoft.DataFactory.table.json"
+}

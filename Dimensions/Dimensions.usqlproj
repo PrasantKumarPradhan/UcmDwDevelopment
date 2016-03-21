@@ -1,0 +1,168 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>24642c81-2938-4742-9fc4-1540739ff21f</ProjectGuid>
+    <OutputType>File</OutputType>
+    <AssemblyName>Algebra.xml</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <Name>Dimensions</Name>
+    <RootNamespace>Dimensions</RootNamespace>
+    <RuntimeVersion>default</RuntimeVersion>
+    <ScopePath>%24(SCRIPT_DIR);%24(CLUSTER_ROOT);%24(SCOPE_DIR);%24(PROJECT_DIR)</ScopePath>
+    <InputStreamSearchPath>%24(PROJECT_DIR);%24(SCRIPT_DIR);%24(CLUSTER_ROOT)</InputStreamSearchPath>
+    <OutputStreamPath>C:\LocalRunDataRoot</OutputStreamPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugSymbols>false</DebugSymbols>
+    <OutputPath>bin\Release\</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Script Include="BingAds\DimAccountFull.usql" />
+    <Script Include="BingAds\DimAccountIncremental.usql" />
+    <Script Include="BingAds\DimAccountTypeFull.usql" />
+    <Script Include="BingAds\DimAccountTypeIncremental.usql" />
+    <Script Include="BingAds\DimAdTypeFull.usql" />
+    <Script Include="BingAds\DimAdTypeIncrement.usql" />
+    <Script Include="BingAds\DimAgencyFull.usql" />
+    <Script Include="BingAds\DimAgencyIncremental.usql" />
+    <Script Include="BingAds\DimCouponBatchFull.usql" />
+    <Script Include="BingAds\DimCouponBatchIncremental.usql" />
+    <Script Include="BingAds\DimCouponFull.usql" />
+    <Script Include="BingAds\DimCouponIncremental.usql" />
+    <Script Include="BingAds\DimCouponRedemptionFull.usql" />
+    <Script Include="BingAds\DimCouponRedemptionIncremental.usql" />
+    <Script Include="BingAds\DimCustomerFull.usql" />
+    <Script Include="BingAds\DimCustomerIncremental.usql" />
+    <Script Include="BingAds\DimDistribtionChannelIncrement.usql" />
+    <Script Include="BingAds\DimDistributionChannelFull.usql" />
+    <Script Include="BingAds\DimMediumFull.usql" />
+    <Script Include="BingAds\DimMediumIncremental.usql" />
+    <Script Include="RevenueRecSummary\DimPublisherFull.usql" />
+    <Script Include="RevenueRecSummary\DimPublisherIncremental.usql" />
+    <Script Include="RevenueRecSummary\DimSkuFull.usql" />
+    <Script Include="RevenueRecSummary\DimSkuIncremental.usql" />
+    <Script Include="RevenueRecSummary\DimSoldByFull.usql" />
+    <Script Include="RevenueRecSummary\DimSoldByIncremental.usql" />
+    <Script Include="Rvr\DimDeviceTypeFull.usql" />
+    <Script Include="Rvr\DimensionStaging.usql" />
+    <Script Include="Rvr\DimPricingLevelFull.usql" />
+    <Script Include="Rvr\DimProductFamilyFull.usql" />
+    <Script Include="Rvr\DimRevenueTypeFull.usql" />
+    <Script Include="Rvr\DimRevSumCategoryFull.usql" />
+    <Script Include="Rvr\DimRevSumDivisionFull.usql" />
+    <ScriptCode Include="BingAds\DimAccountFull.usql.cs">
+      <DependentUpon>BingAds\DimAccountFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimAccountIncremental.usql.cs">
+      <DependentUpon>BingAds\DimAccountIncremental.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimAccountTypeFull.usql.cs">
+      <DependentUpon>BingAds\DimAccountTypeFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimAccountTypeIncremental.usql.cs">
+      <DependentUpon>BingAds\DimAccountTypeIncremental.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimAdTypeFull.usql.cs">
+      <DependentUpon>BingAds\DimAdTypeFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimAdTypeIncrement.usql.cs">
+      <DependentUpon>BingAds\DimAdTypeIncrement.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimAgencyFull.usql.cs">
+      <DependentUpon>BingAds\DimAgencyFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimAgencyIncremental.usql.cs">
+      <DependentUpon>BingAds\DimAgencyIncremental.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimCouponBatchFull.usql.cs">
+      <DependentUpon>BingAds\DimCouponBatchFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimCouponBatchIncremental.usql.cs">
+      <DependentUpon>BingAds\DimCouponBatchIncremental.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimCouponFull.usql.cs">
+      <DependentUpon>BingAds\DimCouponFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimCouponIncremental.usql.cs">
+      <DependentUpon>BingAds\DimCouponIncremental.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimCouponRedemptionFull.usql.cs">
+      <DependentUpon>BingAds\DimCouponRedemptionFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimCouponRedemptionIncremental.usql.cs">
+      <DependentUpon>BingAds\DimCouponRedemptionIncremental.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimCustomerFull.usql.cs">
+      <DependentUpon>BingAds\DimCustomerFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimCustomerIncremental.usql.cs">
+      <DependentUpon>BingAds\DimCustomerIncremental.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimDistribtionChannelIncrement.usql.cs">
+      <DependentUpon>BingAds\DimDistribtionChannelIncrement.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimDistributionChannelFull.usql.cs">
+      <DependentUpon>BingAds\DimDistributionChannelFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimMediumFull.usql.cs">
+      <DependentUpon>BingAds\DimMediumFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="BingAds\DimMediumIncremental.usql.cs">
+      <DependentUpon>BingAds\DimMediumIncremental.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="RevenueRecSummary\DimPublisherFull.usql.cs">
+      <DependentUpon>RevenueRecSummary\DimPublisherFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="RevenueRecSummary\DimPublisherIncremental.usql.cs">
+      <DependentUpon>RevenueRecSummary\DimPublisherIncremental.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="RevenueRecSummary\DimSkuFull.usql.cs">
+      <DependentUpon>RevenueRecSummary\DimSkuFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="RevenueRecSummary\DimSkuIncremental.usql.cs">
+      <DependentUpon>RevenueRecSummary\DimSkuIncremental.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="RevenueRecSummary\DimSoldByFull.usql.cs">
+      <DependentUpon>RevenueRecSummary\DimSoldByFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="RevenueRecSummary\DimSoldByIncremental.usql.cs">
+      <DependentUpon>RevenueRecSummary\DimSoldByIncremental.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="Rvr\DimDeviceTypeFull.usql.cs">
+      <DependentUpon>Rvr\DimDeviceTypeFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="Rvr\DimensionStaging.usql.cs">
+      <DependentUpon>Rvr\DimensionStaging.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="Rvr\DimPricingLevelFull.usql.cs">
+      <DependentUpon>Rvr\DimPricingLevelFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="Rvr\DimProductFamilyFull.usql.cs">
+      <DependentUpon>Rvr\DimProductFamilyFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="Rvr\DimRevenueTypeFull.usql.cs">
+      <DependentUpon>Rvr\DimRevenueTypeFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="Rvr\DimRevSumCategoryFull.usql.cs">
+      <DependentUpon>Rvr\DimRevSumCategoryFull.usql</DependentUpon>
+    </ScriptCode>
+    <ScriptCode Include="Rvr\DimRevSumDivisionFull.usql.cs">
+      <DependentUpon>Rvr\DimRevSumDivisionFull.usql</DependentUpon>
+    </ScriptCode>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="BingAds" />
+    <Folder Include="Rvr" />
+    <Folder Include="RevenueRecSummary" />
+  </ItemGroup>
+  <Import Project="$(AppData)\Microsoft\DataLake\MsBuild\1.0\Usql.targets" />
+  <PropertyGroup>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,323 @@
+{
+  "name": "BingAdsStagingToDw",
+  "properties": {
+    "description": "Type 2 Dimensions of BingAds",
+    "activities": [
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/BINGADS/DimAccountFull.usql",
+          "scriptLinkedService": "BingAdsBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "AccountStage"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DimAccount"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "DimAccountUSqlActivityTemplate",
+        "linkedServiceName": "BingAdsAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/BINGADS/DimAdTypeFull.usql",
+          "scriptLinkedService": "BingAdsBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "AdTypeStage"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DimAdType"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "DimAdTypeUSqlActivityTemplate",
+        "linkedServiceName": "BingAdsAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/BINGADS/DimCouponBatchFull.usql",
+          "scriptLinkedService": "BingAdsBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "CouponBatchStage"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DimCouponBatch"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "DimCouponBatchUSqlActivityTemplate",
+        "linkedServiceName": "BingAdsAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/BINGADS/DimCouponFull.usql",
+          "scriptLinkedService": "BingAdsBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "CouponStage"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DimCoupon"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "DimCouponUSqlActivityTemplate",
+        "linkedServiceName": "BingAdsAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/BINGADS/DimCouponRedemptionFull.usql",
+          "scriptLinkedService": "BingAdsBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "CouponRedemptionStage"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DimCouponRedemption"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "DimCouponRedemptionUSqlActivityTemplate",
+        "linkedServiceName": "BingAdsAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/BINGADS/DimCustomerFull.usql",
+          "scriptLinkedService": "BingAdsBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "CustomerStage"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DimCustomer"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "DimCustomerUSqlActivityTemplate",
+        "linkedServiceName": "BingAdsAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/BINGADS/DimAccountTypeFull.usql",
+          "scriptLinkedService": "BingAdsBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "AccountTypeStage"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DimAccountType"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "DimAccountTypeUSqlActivityTemplate",
+        "linkedServiceName": "BingAdsAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/BINGADS/DimDistributionChannelFull.usql",
+          "scriptLinkedService": "BingAdsBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "DistributionChannelStage"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DimDistributionChannel"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "DimDistributionChannelUSqlActivityTemplate",
+        "linkedServiceName": "BingAdsAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/BINGADS/DimAgencyFull.usql",
+          "scriptLinkedService": "BingAdsBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "CustomerStage"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DimAgency"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "DimAgencyUSqlActivityTemplate",
+        "linkedServiceName": "BingAdsAnalyticsLinkedService"
+      },
+      {
+        "type": "DataLakeAnalyticsU-SQL",
+        "typeProperties": {
+          "scriptPath": "https://ucmstorageacc.blob.core.windows.net/ucmblobcontainer/BINGADS/DimMediumFull.usql",
+          "scriptLinkedService": "BingAdsBlobStorageLinkedService",
+          "degreeOfParallelism": 20,
+          "priority": 100,
+          "parameters": {}
+        },
+        "inputs": [
+          {
+            "name": "MediumStage"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "DimMedium"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "DimMediumUSqlActivityTemplate",
+        "linkedServiceName": "BingAdsAnalyticsLinkedService"
+      }
+    ],
+    "start": "2016-03-16T00:00:00Z",
+    "end": "2016-03-16T01:00:00Z",
+    "isPaused": false,
+    "pipelineMode": "Scheduled"
+  },
+  "$schema": "http://datafactories.schema.management.azure.com/internalschemas/2015-08-01/Microsoft.DataFactory.pipeline.json"
+}

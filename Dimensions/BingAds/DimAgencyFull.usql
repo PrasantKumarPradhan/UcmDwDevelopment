@@ -1,0 +1,82 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+
+DECLARE @InputAccountFilePath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/Account"+@DateTimeStamp+".tsv";
+DECLARE @InputCustomerFilePath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/Customer"+@DateTimeStamp+".tsv";
+DECLARE @OutputFilepath string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimAgency.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@DeltaAccountExtract =
+    EXTRACT 
+        AccountId int?,
+        AccountNumber string,
+        AccountName string,
+        //ProductCategoryId int?,
+        AdvertiserCustomerId int?,
+        AgencyCustomerId int?,
+        AgencyContactName string,
+        AccountTypeId int? 
+    FROM @InputAccountFilePath
+    USING Extractors.Tsv();
+
+
+@DeltaCustomerExtract =
+    EXTRACT CustomerId int?,
+            CustomerName string,
+            CustomerTypeId int,
+            CustomerNumber string,
+            FraudStatusId string,
+            FraudReasonCodeId string,
+            FraudStatusChangeDateTime string
+    FROM @InputCustomerFilePath
+    USING Extractors.Tsv();
+
+@JoinOfAccountCustomer =
+    SELECT DISTINCT AgencyCustomerId AS AgencyId,
+                    Cus.CustomerName AS AgencyName
+    FROM @DeltaAccountExtract AS Acc
+         INNER JOIN
+             @DeltaCustomerExtract AS Cus
+         ON
+         Acc.AgencyCustomerId == Cus.CustomerId;
+
+
+@DimAgencyFinal =
+    SELECT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY AgencyId)) AS AgencyKey,
+           AgencyId,
+           AgencyName,
+           1 AS DwVersion,
+           DateTime.Now AS DwCreatedDate,
+           Environment.UserDomainName AS DwCreatedBy,
+           DateTime.Now AS DwModifiedDate,
+           Environment.UserDomainName AS DwModifiedBy
+    FROM @JoinOfAccountCustomer;
+
+
+DROP TABLE IF EXISTS DimAgency;
+
+CREATE TABLE DimAgency
+(
+    AgencyKey int,
+    AgencyId int?,
+    AgencyName string,
+    DwVersion int,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    DwUpdatedDate DateTime,
+    DwUpdatedBy string,
+    INDEX idx1
+    CLUSTERED(AgencyKey ASC)
+    PARTITIONED BY
+    HASH(AgencyKey)
+);
+ 
+ 
+INSERT INTO DimAgency
+SELECT *  
+       FROM @DimAgencyFinal;
+
+
+OUTPUT @DimAgencyFinal
+TO @OutputFilepath
+USING Outputters.Tsv(quoting:false);

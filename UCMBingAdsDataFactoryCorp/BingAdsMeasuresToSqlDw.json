@@ -1,0 +1,40 @@
+{
+  "name": "BingAdsMeasuresToSqlDw",
+  "properties": {
+    "description": "",
+    "activities": [
+      {
+        "type": "SqlServerStoredProcedure",
+        "typeProperties": {
+          "storedProcedureName": "GetFactBingAds",
+          "storedProcedureParameters": {}
+        },
+        "inputs": [
+          {
+            "name": "DimCustomerSqlDw"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "FactBingAdsSqlDw"
+          }
+        ],
+        "policy": {
+          "timeout": "01:00:00",
+          "concurrency": 1,
+          "retry": 3
+        },
+        "scheduler": {
+          "frequency": "Hour",
+          "interval": 1
+        },
+        "name": "StoredProcedureActivityTemplate"
+      }
+    ],
+    "start": "2016-03-16T00:00:00Z",
+    "end": "2016-03-16T01:00:00Z",
+    "isPaused": false,
+    "pipelineMode": "Scheduled"
+  },
+  "$schema": "http://datafactories.schema.management.azure.com/internalschemas/2015-08-01/Microsoft.DataFactory.pipeline.json"
+}

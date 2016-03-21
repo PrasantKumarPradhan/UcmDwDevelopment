@@ -1,0 +1,163 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+
+DECLARE @InputAccountFilePath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/Account"+@DateTimeStamp+".tsv";
+DECLARE @InputCustomerFilePath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/Customer"+@DateTimeStamp+".tsv";
+DECLARE @OutputFilepath string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimAgency.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@DeltaAccountExtract =
+    EXTRACT 
+        AccountId int?,
+        AccountNumber string,
+        AccountName string,
+        //ProductCategoryId int?,
+        AdvertiserCustomerId int,
+        AgencyCustomerId int?,
+        AgencyContactName string,
+        AccountTypeId int? 
+    FROM @InputAccountFilePath
+    USING Extractors.Tsv();
+
+@DeltaCustomerExtract =
+    EXTRACT CustomerId int?,
+            CustomerName string,
+            CustomerTypeId int,
+            CustomerNumber string,
+            FraudStatusId string,
+            FraudReasonCodeId string,
+            FraudStatusChangeDateTime string
+    FROM @InputCustomerFilePath
+    USING Extractors.Tsv();
+
+@DeltaDataExtract =
+    SELECT DISTINCT AgencyCustomerId AS AgencyId,
+                    Cus.CustomerName AS AgencyName
+    FROM @DeltaAccountExtract AS Acc
+         INNER JOIN
+             @DeltaCustomerExtract AS Cus
+         ON
+         Acc.AgencyCustomerId == Cus.CustomerId;
+
+@SchematizedDim =
+    SELECT *
+    FROM DimAgency;
+
+@Dim_UnmatchedCode = SELECT AgencyId FROM @DeltaDataExtract
+    EXCEPT DISTINCT 
+    SELECT AgencyId FROM @SchematizedDim;
+
+@Temp_Max =
+    SELECT MAX(AgencyKey) AS MaxKey,
+           - 1 AS AgencyKey
+    FROM @SchematizedDim;
+
+@DimRecords_Insert =
+    SELECT ROW_NUMBER() OVER(ORDER BY Pd.AgencyId) AS Rn,
+           - 1 AS AgencyKey,
+           Pd.AgencyId,
+           AgencyName,
+           1 AS DwVersion,
+           DateTime.Now AS DwCreatedDate,
+           Environment.UserDomainName AS DwCreatedBy,
+           DateTime.Now AS DwUpdatedDate,
+           Environment.UserDomainName AS DwUpdatedBy
+    FROM @Dim_UnmatchedCode AS Du
+         INNER JOIN
+             @DeltaDataExtract AS Pd
+         ON Pd.AgencyId == Du.AgencyId;
+
+
+@DimType2_Update =
+    SELECT AgencyKey,
+           Td.AgencyId,
+           Td.AgencyName,
+           (De.DwVersion + 1) AS DwVersion,
+           DwCreatedDate,
+           DwCreatedBy,
+           DateTime.Now AS DwUpdatedDate,
+           Environment.UserDomainName AS DwUpdatedBy
+    FROM @DeltaDataExtract AS Td
+         INNER JOIN
+             @SchematizedDim AS De
+         ON
+         De.AgencyId == Td.AgencyId
+    WHERE De.AgencyName.Trim().ToUpper() != Td.AgencyName.Trim().ToUpper();
+
+
+@DimUnmatchedSchematized =
+    SELECT AgencyId
+    FROM @SchematizedDim
+    EXCEPT DISTINCT
+    SELECT AgencyId
+    FROM @DimType2_Update;
+
+
+@DimSchematizedRecords =
+    SELECT AgencyKey,
+           De.AgencyId,
+           AgencyName,
+           DwVersion,
+           DwCreatedDate,
+           DwCreatedBy,
+           DwUpdatedDate,
+           DwUpdatedBy
+    FROM @SchematizedDim AS De
+         INNER JOIN
+             @DimUnmatchedSchematized AS Ds
+         ON De.AgencyId == Ds.AgencyId;
+
+
+@DimTable_Full =
+    SELECT *
+    FROM @DimSchematizedRecords
+    UNION DISTINCT
+    SELECT *
+    FROM @DimType2_Update
+    UNION DISTINCT
+    SELECT Convert.ToInt32((Di.Rn + Tm.MaxKey)) AS AgencyKey,
+           Di.AgencyId,
+           AgencyName,
+           Di.DwVersion,
+           Di.DwCreatedDate,
+           Di.DwCreatedBy,
+           Di.DwUpdatedDate,
+           Di.DwUpdatedBy
+    FROM @DimRecords_Insert AS Di
+         INNER JOIN
+             @Temp_Max AS Tm
+         ON Di.AgencyKey == Tm.AgencyKey;
+
+
+DROP TABLE IF EXISTS  UcmDatawarehouse.dbo.DimAgency;
+CREATE TABLE UcmDatawarehouse.dbo.DimAgency
+(
+    AgencyKey int,
+    AgencyId int?,
+    AgencyName string,
+    DwVersion int,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    DwUpdatedDate DateTime,
+    DwUpdatedBy string,
+    INDEX idx1
+    CLUSTERED(AgencyKey ASC)
+    PARTITIONED BY
+    HASH(AgencyKey)
+
+);
+
+
+INSERT INTO UcmDatawarehouse.dbo.DimAgency
+SELECT *
+FROM @DimTable_Full;
+
+
+OUTPUT @DimTable_Full
+TO @OutputFilepath
+USING Outputters.Tsv(quoting : false);
+
+
+
+
+

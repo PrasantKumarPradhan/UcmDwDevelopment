@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>5fd67ba9-edaa-444a-8020-f1b92fc60402</ProjectGuid>
+    <OutputType>File</OutputType>
+    <AssemblyName>DataFactory</AssemblyName>
+    <ApiVersion>2015-08-01</ApiVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <Name>UCMRvrDataFactorycorp</Name>
+    <RootNamespace>UCMRvrDataFactorycorp</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>false</DebugSymbols>
+    <OutputPath>bin\Release\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ADFConfigFileToPublish>
+    </ADFConfigFileToPublish>
+  </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="Dependencies\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Script Include="AzureDataLakeStoreLinkedService.json" />
+    <Script Include="DeviceTypeEnrichedStageDataset.json" />
+    <Script Include="DeviceTypeSourceDataset.json" />
+    <Script Include="DeviceTypeStageDataset.json" />
+    <Script Include="DimDeviceTypeDataset.json" />
+    <Script Include="DimDeviceTypeSqlDWDataset.json" />
+    <Script Include="DimPricingLevelDataset.json" />
+    <Script Include="DimPricingLevelSPDataset.json" />
+    <Script Include="DimPricingLevelSqlDWDataset.json" />
+    <Script Include="DimProductFamilyDataset.json" />
+    <Script Include="DimProductFamilySqlDWDataset.json" />
+    <Script Include="DimRevenueTypeDataset.json" />
+    <Script Include="DimRevenueTypeSqlDWDataset.json" />
+    <Script Include="DimRevSumCategoryDataset.json" />
+    <Script Include="DimRevSumCategorySqlDWDataset.json" />
+    <Script Include="DimRevSumDivisionDataset.json" />
+    <Script Include="DimRevSumDivisionSqlDWDataset.json" />
+    <Script Include="FactRvrDataset.json" />
+    <Script Include="FactRvrSqlDWDataset.json" />
+    <Script Include="FactSrpvDataset.json" />
+    <Script Include="FactSrpvSqlDWDataset.json" />
+    <Script Include="PipelineTemplate.json" />
+    <Script Include="PricingLevelEnrichedStageDataset.json" />
+    <Script Include="PricingLevelSourceDataset.json" />
+    <Script Include="PricingLevelStageDataset.json" />
+    <Script Include="ProductFamilyEnrichedStageDataset.json" />
+    <Script Include="ProductFamilySourceDataset.json" />
+    <Script Include="ProductFamilyStageDataset.json" />
+    <Script Include="RevenueTypeEnrichedStageDataset.json" />
+    <Script Include="RevenueTypeSourceDataset.json" />
+    <Script Include="RevenueTypeStageDataset.json" />
+    <Script Include="RevSumCategoryEnrichedStageDataset.json" />
+    <Script Include="RevSumCategorySourceDataset.json" />
+    <Script Include="RevSumCategoryStageDataset.json" />
+    <Script Include="RevSumDivisionEnrichedStageDataset.json" />
+    <Script Include="RevSumDivisionSourceDataset.json" />
+    <Script Include="RevSumDivisionStageDataset.json" />
+    <Script Include="RvrAdlsToSqlDwPipeline.json" />
+    <Script Include="RvrAnalyticsLinkedService.json" />
+    <Script Include="RvrBlobStorageLinkedService.json" />
+    <Script Include="RvrCleansingPipeline.json" />
+    <Script Include="RvrDataEnrichedStageDataset.json" />
+    <Script Include="RvrDataSourceDataset.json" />
+    <Script Include="RvrDataStageDataset.json" />
+    <Script Include="RvrDataWarehousePipeline.json" />
+    <Script Include="RvrFileServerLinkedService.json" />
+    <Script Include="RvrLakeStoreLinkedService.json" />
+    <Script Include="RvrSorceFileCopyPipeline.json" />
+    <Script Include="RvrSqlDWLinkedService.json" />
+    <Script Include="SrpvDataEnrichedStageDataset.json" />
+    <Script Include="SrpvDataSourceDataset.json" />
+    <Script Include="SrpvDataStageDataset.json" />
+  </ItemGroup>
+  <Import Project="$(AppData)\Microsoft\DataFactory Tools for Visual Studio\MsBuild\1.0\DataFactory.targets" />
+</Project>

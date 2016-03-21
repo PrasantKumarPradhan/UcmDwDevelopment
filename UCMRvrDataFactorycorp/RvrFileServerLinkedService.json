@@ -1,0 +1,14 @@
+{
+  "name": "RvrFileServerLinkedService",
+  "properties": {
+    "description": "",
+    "type": "OnPremisesFileServer",
+    "typeProperties": {
+      "host": "localhost",
+      "gatewayName": "SaBingDevHyp178Gateway",
+      "userId": "fareast\\v-prprdh",
+      "password": "**********"
+    }
+  },
+  "$schema": "http://datafactories.schema.management.azure.com/internalschemas/2015-08-01/Microsoft.DataFactory.linkedservice.json"
+}

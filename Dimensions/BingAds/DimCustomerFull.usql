@@ -1,0 +1,70 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+
+DECLARE InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/Customer"+@DateTimeStamp+".tsv";
+DECLARE @OutputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimCustomer.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@TempCustomer =
+    EXTRACT 
+        CustomerId int,
+        CustomerName string,
+        CustomerTypeId int,
+        CustomerNumber string,
+        FraudStatusId string,
+        FraudReasonCodeId string,
+        FraudStatusChangeDateTime string
+    FROM @InputFilepath
+    USING Extractors.Tsv();
+
+@TempDimCustomer =
+    SELECT CustomerId,
+           CustomerTypeId,
+           CustomerName,
+           CustomerNumber,
+           FraudStatusId,
+           FraudReasonCodeId
+    FROM @TempCustomer;
+
+
+@DimCustomer =
+    SELECT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY CustomerId)) AS CustomerKey,
+           *,
+           1 AS DwVersion,
+           DateTime.Now AS CreatedDate,
+           Environment.UserDomainName AS CreatedBy,
+           DateTime.Now AS ModifiedDate,
+           Environment.UserDomainName AS ModifiedBy
+    FROM @TempDimCustomer;
+
+DROP TABLE IF EXISTS DimCustomer;
+CREATE TABLE DimCustomer
+(
+    CustomerKey int,
+    CustomerId  int,
+    CustomerTypeId int,
+    CustomerName string,
+    CustomerNumber string,
+    FraudStatusId string,
+    FraudReasonCodeId string,
+    DwVersion int,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    DwUpdatedDate DateTime,
+    DwUpdatedBy string,
+    INDEX idx1
+    CLUSTERED(CustomerId ASC)
+    PARTITIONED BY
+    HASH(CustomerId)
+);
+
+
+INSERT INTO DimCustomer
+SELECT *
+FROM @DimCustomer;
+
+
+
+OUTPUT @DimCustomer
+TO @OutputFilepath
+USING Outputters.Tsv(quoting : false); 

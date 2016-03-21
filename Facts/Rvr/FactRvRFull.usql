@@ -1,0 +1,360 @@
+﻿DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/FactRvR.tsv";
+DECLARE @OutputStream string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/RVR/FactRvR.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@ExtractRvR =
+    EXTRACT AccountCode int,
+            CalendarYear int,
+            CalendarMonth int,
+            AccountClass string,
+            AccountSubClass string,
+            DeviceType string,
+            PricingLevel string,
+            ProductFamilyCode string,
+            RevSumDivisionCode string,
+            RevSumCategoryCode string,
+            Actual double?,
+            Budget double?,
+            Forecast double?
+    FROM @InputFilepath
+    USING Extractors.Tsv(quoting : false);
+
+@RvRRev =
+    SELECT *
+    FROM @ExtractRvR 
+    WHERE AccountSubClass != "";
+
+@RvRRevTemp =
+    SELECT AccountCode,
+           CalendarYear,
+           CalendarMonth,
+           AccountClass,
+           DeviceType,
+           PricingLevel,
+           ProductFamilyCode,
+           RevSumDivisionCode,
+           RevSumCategoryCode,
+           Actual,
+           Budget,
+           Forecast
+    FROM @ExtractRvR 
+    EXCEPT DISTINCT
+    SELECT AccountCode,
+           CalendarYear,
+           CalendarMonth,
+           AccountClass,
+           DeviceType,
+           PricingLevel,
+           ProductFamilyCode,
+           RevSumDivisionCode,
+           RevSumCategoryCode,
+           Actual,
+           Budget,
+           Forecast
+    FROM @RvRRev;
+
+@RvRFull =
+    SELECT AccountCode,
+           CalendarYear,
+           CalendarMonth,
+           AccountClass,
+           AccountSubClass,
+           DeviceType,
+           PricingLevel,
+           ProductFamilyCode,
+           RevSumDivisionCode,
+           RevSumCategoryCode,
+           Actual,
+           Budget,
+           Forecast
+    FROM @RvRRev
+    UNION
+    SELECT AccountCode,
+           CalendarYear,
+           CalendarMonth,
+           AccountClass,
+           "" AS AccountSubClass,
+           DeviceType,
+           PricingLevel,
+           ProductFamilyCode,
+           RevSumDivisionCode,
+           RevSumCategoryCode,
+           Actual,
+           Budget,
+           Forecast
+    FROM @RvRRevTemp;
+
+@RvRFinal =
+    SELECT Rv.AccountCode,
+           Convert.ToInt32((Convert.ToString(Rv.CalendarYear)+(Convert.ToString(Rv.CalendarMonth).Length==1 ? "0"+Convert.ToString(Rv.CalendarMonth) : Convert.ToString(Rv.CalendarMonth))+"01")) AS CalendarDate,
+           Rv.AccountClass,
+           Rv.AccountSubClass,
+           Rv.DeviceType,
+           Rv.PricingLevel,
+           Rv.ProductFamilyCode,
+           Rv.RevSumDivisionCode,
+           Rv.RevSumCategoryCode,
+           Rv.Actual,
+           Rv.Budget,
+           Rv.Forecast
+    FROM @ExtractRvR AS Rv
+         INNER JOIN
+             @RvRFull AS Rf
+         ON Rv.AccountCode == Rf.AccountCode AND
+            Rv.CalendarYear == Rf.CalendarYear AND
+            Rv.CalendarMonth == Rf.CalendarMonth AND
+            Rv.AccountClass == Rf.AccountClass AND
+            Rv.AccountSubClass == Rf.AccountSubClass AND
+            Rv.DeviceType == Rf.DeviceType AND
+            Rv.PricingLevel == Rf.PricingLevel AND
+            Rv.ProductFamilyCode == Rf.ProductFamilyCode AND
+            Rv.RevSumDivisionCode == Rf.RevSumDivisionCode AND
+            Rv.RevSumCategoryCode == Rf.RevSumCategoryCode AND
+            Rv.Actual == Rf.Actual AND
+            Rv.Budget == Rf.Budget AND
+            Rv.Forecast == Rf.Forecast;                                                       
+
+//@DimAccount =
+//    SELECT *
+//    FROM DimAccount;
+
+@DimDeviceType =
+    SELECT *
+    FROM DimDeviceTypeDegenerated;
+
+@DimPricingLevel =
+    SELECT *
+    FROM DimPricingLevelDegenerated;
+
+@DimProductFamily =
+    SELECT *
+    FROM DimProductFamily;
+
+@DimRevSumCategory =
+    SELECT *
+    FROM DimRevSumCategory;
+
+@DimRevSumDivision =
+    SELECT *
+    FROM DimRevSumDivision;
+
+@DimRevenueType =
+    SELECT *
+    FROM DimRevenueTypeDegenerated;
+
+@DimDate =
+    SELECT *
+    FROM DimDate;
+
+
+@FactRvr_DeviceType =
+    SELECT AccountCode,
+           CalendarDate,
+           AccountClass,
+           AccountSubClass,
+           Dd.DeviceTypeKey,
+           PricingLevel,
+           ProductFamilyCode,
+           RevSumDivisionCode,
+           RevSumCategoryCode,
+           Actual,
+           Budget,
+           Forecast
+    FROM @RvRFinal AS Rr
+         LEFT OUTER JOIN
+             @DimDeviceType AS Dd
+         ON Rr.DeviceType == Dd.DeviceType;
+
+
+
+@FactRvr_PricingLevel =
+    SELECT AccountCode,
+           CalendarDate,
+           AccountClass,
+           AccountSubClass,
+           DeviceTypeKey,
+           Dd.PricingLevelKey,
+           ProductFamilyCode,
+           RevSumDivisionCode,
+           RevSumCategoryCode,
+           Actual,
+           Budget,
+           Forecast
+    FROM @FactRvr_DeviceType AS Rr
+         LEFT OUTER JOIN
+             @DimPricingLevel AS Dd
+         ON Rr.PricingLevel == Dd.PricingLevel;
+
+
+@FactRvr_ProductFamily =
+    SELECT AccountCode,
+            CalendarDate,
+           AccountClass,
+           AccountSubClass,
+           DeviceTypeKey,
+           PricingLevelKey,
+           Dd.ProductFamilyKey,
+           RevSumDivisionCode,
+           RevSumCategoryCode,
+           Actual,
+           Budget,
+           Forecast
+    FROM @FactRvr_PricingLevel AS Rr
+         LEFT OUTER JOIN
+             @DimProductFamily AS Dd
+         ON Rr.ProductFamilyCode == Dd.ProductFamilyCode;
+
+
+@FactRvr_RevSumDivision =
+    SELECT AccountCode,
+           CalendarDate,
+           AccountClass,
+           AccountSubClass,
+           DeviceTypeKey,
+           PricingLevelKey,
+           ProductFamilyKey,
+           Dd.RevSumDivisionKey,
+           RevSumCategoryCode,
+           Actual,
+           Budget,
+           Forecast
+    FROM @FactRvr_ProductFamily AS Rr
+         LEFT OUTER JOIN
+             @DimRevSumDivision AS Dd
+         ON Rr.RevSumDivisionCode == Dd.RevSumDivisionCode;
+
+@FactRvr_RevSumCategory =
+    SELECT AccountCode,
+           CalendarDate,
+           AccountClass,
+           AccountSubClass,
+           DeviceTypeKey,
+           PricingLevelKey,
+           ProductFamilyKey,
+           RevSumDivisionKey,
+           Dd.RevSumCategoryKey,
+           Actual,
+           Budget,
+           Forecast
+    FROM @FactRvr_RevSumDivision AS Rr
+         LEFT OUTER JOIN
+             @DimRevSumCategory AS Dd
+         ON Rr.RevSumCategoryCode == Dd.RevSumCategoryCode;
+
+
+@FactRvr_DimDate =
+    SELECT AccountCode AS AccountId,
+           Dd.DateKey AS CalendarDateKey,
+           AccountClass,
+           AccountSubClass,
+           DeviceTypeKey,
+           PricingLevelKey,
+           ProductFamilyKey,
+           RevSumDivisionKey,
+           RevSumCategoryKey,
+           Actual,
+           Budget,
+           Forecast
+    FROM @FactRvr_RevSumCategory AS Rr
+         LEFT OUTER JOIN
+             @DimDate AS Dd
+         ON Rr.CalendarDate == Dd.SimpleDate;
+
+
+@FactRvr_RevenueType =
+    SELECT AccountId,
+           CalendarDateKey,
+           Dd.RevenueTypeKey,
+           DeviceTypeKey,
+           PricingLevelKey,
+           ProductFamilyKey,
+           RevSumDivisionKey,
+           RevSumCategoryKey,
+           Actual,
+           Budget,
+           Forecast
+    FROM @FactRvr_DimDate AS Rr
+         LEFT OUTER JOIN
+             @DimRevenueType AS Dd
+         ON Rr.AccountClass == Dd.AccountClass AND Rr.AccountSubClass == Dd.AccountSubClass;
+
+
+@FactRvR =
+    SELECT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY AccountId, CalendarDateKey, RevenueTypeKey, DeviceTypeKey,
+           PricingLevelKey,
+           ProductFamilyKey,
+           RevSumDivisionKey,
+           RevSumCategoryKey)) AS RvRFactKey,
+           *,
+           DateTime.Now AS CreatedDate,
+           Environment.UserDomainName AS CreatedBy
+    FROM @FactRvr_RevenueType;
+
+// Storing backup in temporary table
+
+DROP TABLE IF EXISTS FactRvRTemp;
+
+CREATE TABLE FactRvRTemp
+(
+    RvRFactKey int,
+    AccountId int,
+    CalendarDateKey int?,
+    RevenueTypeKey int?,
+    DeviceTypeKey int?,
+    PricingLevelKey int?,
+    ProductFamilyKey int?,
+    RevSumDivisionKey int?,
+    RevSumCategoryKey int?,
+    Actual double?,
+    Budget double?,
+    Forecast double?,
+    DWCreatedDate DateTime,
+    DWCreatedBy string,
+    INDEX idx1
+    CLUSTERED(RvRFactKey ASC)
+    PARTITIONED BY
+    HASH(RvRFactKey)
+
+);
+
+
+INSERT INTO FactRvRTemp
+SELECT *
+FROM FactRvR;
+
+
+DROP TABLE IF EXISTS FactRvR;
+
+CREATE TABLE FactRvR
+(
+    RvRFactKey int,
+    AccountId int,
+    CalendarDateKey int?,
+    RevenueTypeKey int?,
+    DeviceTypeKey int?,
+    PricingLevelKey int?,
+    ProductFamilyKey int?,
+    RevSumDivisionKey int?,
+    RevSumCategoryKey int?,
+    Actual double?,
+    Budget double?,
+    Forecast double?,
+    DWCreatedDate DateTime,
+    DWCreatedBy string,
+    INDEX idx1
+    CLUSTERED(RvRFactKey ASC)
+    PARTITIONED BY
+    HASH(RvRFactKey)
+
+);
+
+
+INSERT INTO FactRvR
+SELECT *
+FROM @FactRvR;
+
+
+OUTPUT @FactRvR TO @OutputStream
+USING Outputters.Tsv(quoting:false);
+

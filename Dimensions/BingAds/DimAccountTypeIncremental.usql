@@ -1,0 +1,136 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+
+DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/AccountType"+@DateTimeStamp+".tsv";
+DECLARE @OutputStream string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimAccountType.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@DeltaDataExtract =
+    EXTRACT AccountTypeId int,
+            AccountTypeName string,
+            CreatedDTim DateTime
+    FROM @InputFilepath
+    USING Extractors.Tsv(silent : true);
+
+@SchematizedDim =
+    SELECT *
+    FROM DimAccountType;
+
+@Dim_UnmatchedCode = SELECT AccountTypeId FROM @DeltaDataExtract
+    EXCEPT DISTINCT 
+    SELECT AccountTypeId FROM @SchematizedDim;
+
+@Temp_Max =
+    SELECT MAX(AccountTypeKey) AS MaxKey,
+           - 1 AS AccountTypeKey
+    FROM @SchematizedDim;
+
+@DimRecords_Insert =
+    SELECT ROW_NUMBER() OVER(ORDER BY Pd.AccountTypeId) AS Rn,
+           - 1 AS AccountTypeKey,
+           Pd.AccountTypeId,
+           AccountTypeName,
+           1 AS DwVersion,
+           DateTime.Now AS CreatedDate,
+           Environment.UserDomainName AS CreatedBy,
+           DateTime.Now AS ModifiedDate,
+           Environment.UserDomainName AS ModifiedBy
+    FROM @Dim_UnmatchedCode AS Du
+         INNER JOIN
+             @DeltaDataExtract AS Pd
+         ON Pd.AccountTypeId == Du.AccountTypeId;
+
+
+@DimType2_Update =
+    SELECT AccountTypeKey,
+           Td.AccountTypeId,
+           Td.AccountTypeName,
+           (De.DwVersion + 1) AS DwVersion,
+           DwCreatedDate,
+           DwCreatedBy,
+           DateTime.Now AS ModifiedDate,
+           Environment.UserDomainName AS ModifiedBy
+    FROM @DeltaDataExtract AS Td
+         INNER JOIN
+             @SchematizedDim AS De
+         ON
+         De.AccountTypeId == Td.AccountTypeId
+    WHERE De.AccountTypeName.Trim().ToUpper() != Td.AccountTypeName.Trim().ToUpper();
+
+
+@DimUnmatchedSchematized =
+    SELECT AccountTypeId
+    FROM @SchematizedDim
+    EXCEPT DISTINCT
+    SELECT AccountTypeId
+    FROM @DimType2_Update;
+
+
+@DimSchematizedRecords =
+    SELECT AccountTypeKey,
+           De.AccountTypeId,
+           AccountTypeName,
+           DwVersion,
+           DwCreatedDate,
+           DwCreatedBy,
+           DwUpdatedDate,
+           DwUpdatedBy
+    FROM @SchematizedDim AS De
+         INNER JOIN
+             @DimUnmatchedSchematized AS Ds
+         ON De.AccountTypeId == Ds.AccountTypeId;
+
+
+@DimTable_Full =
+    SELECT *
+    FROM @DimSchematizedRecords
+    UNION DISTINCT
+    SELECT *
+    FROM @DimType2_Update
+    UNION DISTINCT
+    SELECT (int) (Di.Rn + Tm.MaxKey) AS AccountTypeKey,
+           Di.AccountTypeId,
+           AccountTypeName,
+           Di.DwVersion,
+           Di.CreatedDate,
+           Di.CreatedBy,
+           Di.ModifiedDate,
+           Di.ModifiedBy
+    FROM @DimRecords_Insert AS Di
+         INNER JOIN
+             @Temp_Max AS Tm
+         ON Di.AccountTypeKey == Tm.AccountTypeKey;
+
+
+
+DROP TABLE IF EXISTS  UcmDatawarehouse.dbo.DimAccountType;
+CREATE TABLE UcmDatawarehouse.dbo.DimAccountType
+(
+    AccountTypeKey int,
+    AccountTypeId int,
+    AccountTypeName string,
+    DwVersion int,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    DwUpdatedDate DateTime,
+    DwUpdatedBy string,
+    INDEX idx1
+    CLUSTERED(AccountTypeKey ASC)
+    PARTITIONED BY
+    HASH(AccountTypeKey)
+);
+
+
+INSERT INTO UcmDatawarehouse.dbo.DimAccountType
+SELECT *
+FROM @DimTable_Full;
+
+
+OUTPUT @DimTable_Full
+TO @OutputStream
+USING Outputters.Tsv(quoting : false);
+
+
+
+
+

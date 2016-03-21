@@ -1,0 +1,129 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+
+DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/DistributionChannel"+@DateTimeStamp+".tsv";
+DECLARE @OutputFilepath string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimDistributionChannel.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@DeltaDataExtract =
+    EXTRACT DistributionChannelId int,
+       DistributionChannelName string,
+       LanguageLocaleId int,
+       ProductSiteId int,
+       AdMetrixCountryId int,
+       CreatedDTime DateTime,
+       PilotFlag int
+    FROM @InputFilepath
+    USING Extractors.Tsv(silent : true);
+
+@SchematizedDim =
+    SELECT *
+    FROM DimDistributionChannel;
+
+@Dim_UnmatchedCode = SELECT DistributionChannelId FROM @DeltaDataExtract
+    EXCEPT DISTINCT 
+    SELECT DistributionChannelId FROM @SchematizedDim;
+
+@Temp_Max =
+    SELECT MAX(DistributionChannelKey) AS MaxKey,
+           - 1 AS DistributionChannelKey
+    FROM @SchematizedDim;
+
+@DimRecords_Insert =
+    SELECT ROW_NUMBER() OVER(ORDER BY Pd.DistributionChannelId) AS Rn,
+           - 1 AS DistributionChannelKey,
+           Pd.DistributionChannelId,
+           DistributionChannelName,
+           LanguageLocaleId,
+           ProductSiteId,
+           AdMetrixCountryId,
+           PilotFlag,
+           1 AS DwVersion,
+           DateTime.Now AS DwCreatedDate,
+           Environment.UserDomainName AS DwCreatedBy,
+           DateTime.Now AS DwModifiedDate,
+           Environment.UserDomainName AS DwModifiedBy
+    FROM @Dim_UnmatchedCode AS Du
+         INNER JOIN
+             @DeltaDataExtract AS Pd
+         ON Du.DistributionChannelId == Pd.DistributionChannelId;
+
+@DimType2_Update =
+    SELECT DistributionChannelKey,
+           De.DistributionChannelId,
+           Td.DistributionChannelName,
+           Td.LanguageLocaleId,
+           Td.ProductSiteId,
+           Td.AdMetrixCountryId,
+           Td.PilotFlag,
+           (De.DwVersion + 1) AS DwVersion,
+           DwCreatedDate,
+           DwCreatedBy,
+           DateTime.Now AS DwModifiedDate,
+           Environment.UserDomainName AS DwModifiedBy
+    FROM @DeltaDataExtract AS Td
+         INNER JOIN
+             @SchematizedDim AS De
+         ON De.DistributionChannelId == Td.DistributionChannelId
+    WHERE De.DistributionChannelName != Td.DistributionChannelName  OR  De.LanguageLocaleId != Td.LanguageLocaleId OR De.ProductSiteId != Td.ProductSiteId OR De.AdMetrixCountryId != Td.AdMetrixCountryId OR De.PilotFlag != Td.PilotFlag  ;
+
+
+@DimUnmatchedSchematized =
+    SELECT DistributionChannelId
+    FROM @SchematizedDim
+    EXCEPT DISTINCT
+    SELECT DistributionChannelId
+    FROM @DimType2_Update;
+
+@DimSchematizedRecords =
+    SELECT DistributionChannelKey,
+           De.DistributionChannelId,
+           DistributionChannelName,
+           LanguageLocaleId,
+           ProductSiteId,
+           AdMetrixCountryId,
+           PilotFlag,
+           DwVersion,
+           DwCreatedDate,
+           DwCreatedBy,
+           DwUpdatedDate,
+           DwUpdatedBy
+    FROM @SchematizedDim AS De
+         INNER JOIN
+             @DimUnmatchedSchematized AS Ds
+         ON De.DistributionChannelId == Ds.DistributionChannelId;
+
+@DimTable_Full =
+    SELECT *
+    FROM @DimSchematizedRecords
+    UNION DISTINCT
+    SELECT *
+    FROM @DimType2_Update
+    UNION DISTINCT
+    SELECT Convert.ToInt32((Di.Rn + Tm.MaxKey)) AS DistributionChannelKey,
+           DistributionChannelId,
+           DistributionChannelName,
+           LanguageLocaleId,
+           ProductSiteId,
+           AdMetrixCountryId,
+           PilotFlag,
+           Di.DwVersion,
+           Di.DwCreatedDate,
+           Di.DwCreatedBy,
+           Di.DwModifiedDate,
+           Di.DwModifiedBy
+    FROM @DimRecords_Insert AS Di
+         INNER JOIN
+             @Temp_Max AS Tm
+         ON Di.DistributionChannelKey == Tm.DistributionChannelKey;        
+
+TRUNCATE TABLE DimDistributionChannel; 
+ 
+INSERT INTO UcmDatawarehouse.dbo.DimDistributionChannel
+SELECT *  
+       FROM @DimTable_Full;
+
+
+OUTPUT @DimTable_Full
+TO @OutputFilepath
+USING Outputters.Tsv(quoting:false);

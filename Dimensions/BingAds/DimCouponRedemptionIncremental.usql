@@ -1,0 +1,153 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+
+DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/CouponRedemption"+@DateTimeStamp+".tsv";
+DECLARE @OutputFilepath string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimCouponRedemption.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@DeltaDataExtract =
+    EXTRACT SourceCouponRedemptionId int,
+	CouponId int,
+	AccountId int,
+	RedemptionDate DateTime,
+	ExpiryDate DateTime,
+	CouponValue string,
+	CouponClassId int?,
+	CouponBatchId int?,
+	ModifiedDtim DateTime,
+	ModifiedByUserId int? 	          
+               FROM @InputFilepath
+    USING Extractors.Tsv();
+
+@DeltaDataExtract =
+    SELECT SourceCouponRedemptionId,
+           CouponId,
+           AccountId,
+           RedemptionDate,
+           ExpiryDate,
+           CouponValue,
+           CouponClassId,
+           CouponBatchId
+    FROM @DeltaDataExtract;
+
+
+@SchematizedDim =
+    SELECT *
+    FROM DimCouponRedemption;
+
+@Dim_UnmatchedCode = SELECT SourceCouponRedemptionId FROM @DeltaDataExtract
+    EXCEPT DISTINCT 
+    SELECT SourceCouponRedemptionId FROM @SchematizedDim;
+
+@Temp_Max =
+    SELECT MAX(CouponRedemptionKey) AS MaxKey,
+           - 1 AS CouponRedemptionKey
+    FROM @SchematizedDim;
+
+@DimRecords_Insert =
+    SELECT ROW_NUMBER() OVER(ORDER BY Pd.SourceCouponRedemptionId) AS Rn,
+           - 1 AS CouponRedemptionKey,
+           Pd.SourceCouponRedemptionId,
+           CouponId,
+           AccountId,
+           RedemptionDate,
+           ExpiryDate,
+           CouponValue,
+           CouponClassId,
+           CouponBatchId,
+           1 AS TableVersion,
+           DateTime.Now AS CreatedDate,
+           Environment.UserDomainName AS CreatedBy,
+           DateTime.Now AS ModifiedDate,
+           Environment.UserDomainName AS ModifiedBy
+    FROM @Dim_UnmatchedCode AS Du
+         INNER JOIN
+             @DeltaDataExtract AS Pd
+         ON Du.SourceCouponRedemptionId == Pd.SourceCouponRedemptionId;
+
+@DimType2_Update =
+    SELECT CouponRedemptionKey,
+           De.SourceCouponRedemptionId,
+           Td.CouponId,
+           Td.AccountId,
+           Td.RedemptionDate,
+           Td.ExpiryDate,
+           Td.CouponValue,
+           Td.CouponClassId,
+           Td.CouponBatchId,
+           (De.TableVersion + 1) AS TableVersion,
+           DWCreatedDate,
+           DWCreatedBy,
+           DateTime.Now AS ModifiedDate,
+           Environment.UserDomainName AS ModifiedBy
+    FROM @DeltaDataExtract AS Td
+         INNER JOIN
+             @SchematizedDim AS De
+         ON De.SourceCouponRedemptionId == Td.SourceCouponRedemptionId
+    WHERE De.CouponId != Td.CouponId OR De.AccountId != Td.AccountId OR
+          De.RedemptionDate != Td.RedemptionDate OR De.ExpiryDate != Td.ExpiryDate OR De.CouponValue != Td.CouponValue OR De.CouponClassId != Td.CouponClassId OR De.CouponBatchId != Td.CouponBatchId;
+
+
+@DimUnmatchedSchematized =
+    SELECT SourceCouponRedemptionId
+    FROM @SchematizedDim
+    EXCEPT DISTINCT
+    SELECT SourceCouponRedemptionId
+    FROM @DimType2_Update;
+
+@DimSchematizedRecords =
+    SELECT CouponRedemptionKey,
+           De.SourceCouponRedemptionId,
+           CouponId,
+           AccountId,
+           RedemptionDate,
+           ExpiryDate,
+           CouponValue,
+           CouponClassId,
+           CouponBatchId,
+           TableVersion,
+           DWCreatedDate,
+           DWCreatedBy,
+           DWUpdatedDate,
+           DWUpdatedBy
+    FROM @SchematizedDim AS De
+         INNER JOIN
+             @DimUnmatchedSchematized AS Ds
+         ON De.SourceCouponRedemptionId == Ds.SourceCouponRedemptionId;
+
+@DimTable_Full =
+    SELECT *
+    FROM @DimSchematizedRecords
+    UNION DISTINCT
+    SELECT *
+    FROM @DimType2_Update
+    UNION DISTINCT
+    SELECT Convert.ToInt32((Di.Rn + Tm.MaxKey)) AS CouponRedemptionKey,
+           SourceCouponRedemptionId,
+           CouponId,
+           AccountId,
+           RedemptionDate,
+           ExpiryDate,
+           CouponValue,
+           CouponClassId,
+           CouponBatchId,
+           Di.TableVersion,
+           Di.CreatedDate,
+           Di.CreatedBy,
+           Di.ModifiedDate,
+           Di.ModifiedBy
+    FROM @DimRecords_Insert AS Di
+         INNER JOIN
+             @Temp_Max AS Tm
+         ON Di.CouponRedemptionKey == Tm.CouponRedemptionKey;        
+
+TRUNCATE TABLE DimCouponRedemption; 
+ 
+INSERT INTO DimCouponRedemption
+SELECT *  
+       FROM @DimTable_Full;
+
+
+OUTPUT @DimTable_Full
+TO @OutputFilepath
+USING Outputters.Tsv(quoting:false);

@@ -1,0 +1,117 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+
+DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/Coupon"+@DateTimeStamp+".tsv";
+DECLARE @OutputFilepath string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimCoupon.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@DeltaDataExtract =
+    EXTRACT SourceCouponId int,
+	CouponCode string,
+	RedemptionCount int,
+	CouponBatchId int	          
+               FROM @InputFilepath
+    USING Extractors.Tsv(silent : true);
+
+@SchematizedDim =
+    SELECT *
+    FROM DimCoupon;
+
+@Dim_UnmatchedCode = SELECT SourceCouponId FROM @DeltaDataExtract
+    EXCEPT DISTINCT 
+    SELECT SourceCouponId FROM @SchematizedDim;
+
+@Temp_Max =
+    SELECT MAX(CouponKey) AS MaxKey,
+           - 1 AS CouponKey
+    FROM @SchematizedDim;
+
+@DimRecords_Insert =
+    SELECT ROW_NUMBER() OVER(ORDER BY Pd.SourceCouponId) AS Rn,
+           - 1 AS CouponKey,
+           Pd.SourceCouponId,
+           CouponCode,
+           RedemptionCount,
+           CouponBatchId,
+           1 AS TableVersion,
+           DateTime.Now AS CreatedDate,
+           Environment.UserDomainName AS CreatedBy,
+           DateTime.Now AS ModifiedDate,
+           Environment.UserDomainName AS ModifiedBy
+    FROM @Dim_UnmatchedCode AS Du
+         INNER JOIN
+             @DeltaDataExtract AS Pd
+         ON Du.SourceCouponId == Pd.SourceCouponId;
+
+@DimType2_Update =
+    SELECT CouponKey,
+           De.SourceCouponId,
+           Td.CouponCode,
+           Td.RedemptionCount,
+           Td.CouponBatchId,
+           (De.TableVersion + 1) AS TableVersion,
+           DWCreatedDate,
+           DWCreatedBy,
+           DateTime.Now AS ModifiedDate,
+           Environment.UserDomainName AS ModifiedBy
+    FROM @DeltaDataExtract AS Td
+         INNER JOIN
+             @SchematizedDim AS De
+         ON De.SourceCouponId == Td.SourceCouponId
+    WHERE De.CouponCode != Td.CouponCode OR De.RedemptionCount != Td.RedemptionCount OR De.CouponBatchId != Td.CouponBatchId;
+
+@DimUnmatchedSchematized =
+    SELECT SourceCouponId
+    FROM @SchematizedDim
+    EXCEPT DISTINCT
+    SELECT SourceCouponId
+    FROM @DimType2_Update;
+
+@DimSchematizedRecords =
+    SELECT CouponKey,
+           De.SourceCouponId,
+           CouponCode,
+           RedemptionCount,
+           CouponBatchId,
+           TableVersion,
+           DWCreatedDate,
+           DWCreatedBy,
+           DWUpdatedDate,
+           DWUpdatedBy
+    FROM @SchematizedDim AS De
+         INNER JOIN
+             @DimUnmatchedSchematized AS Ds
+         ON De.SourceCouponId == Ds.SourceCouponId;
+
+@DimTable_Full =
+    SELECT *
+    FROM @DimSchematizedRecords
+    UNION DISTINCT
+    SELECT *
+    FROM @DimType2_Update
+    UNION DISTINCT
+    SELECT Convert.ToInt32((Di.Rn + Tm.MaxKey)) AS CouponKey,
+           SourceCouponId,
+           CouponCode,
+           RedemptionCount,
+           CouponBatchId,
+           Di.TableVersion,
+           Di.CreatedDate,
+           Di.CreatedBy,
+           Di.ModifiedDate,
+           Di.ModifiedBy
+    FROM @DimRecords_Insert AS Di
+         INNER JOIN
+             @Temp_Max AS Tm
+         ON Di.CouponKey == Tm.CouponKey;        
+
+TRUNCATE TABLE DimCoupon; 
+ 
+INSERT INTO UcmDatawarehouse.dbo.DimCoupon
+SELECT *  
+       FROM @DimTable_Full;
+
+
+OUTPUT @DimTable_Full
+TO @OutputFilepath
+USING Outputters.Tsv(quoting:false);

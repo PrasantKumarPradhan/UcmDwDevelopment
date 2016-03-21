@@ -1,0 +1,80 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>10287dbf-3dfe-4ccc-99d8-d7bd3d1aaa9e</ProjectGuid>
+    <OutputType>File</OutputType>
+    <AssemblyName>DataFactory</AssemblyName>
+    <ApiVersion>2015-08-01</ApiVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <Name>UCMBingAdsDataFactoryCorp</Name>
+    <RootNamespace>UCMBingAdsDataFactoryCorp</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>false</DebugSymbols>
+    <OutputPath>bin\Release\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ADFConfigFileToPublish>
+    </ADFConfigFileToPublish>
+  </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="Dependencies\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Script Include="AccountSource.json" />
+    <Script Include="AccountStage.json" />
+    <Script Include="AccountTypeSource.json" />
+    <Script Include="AccountTypeStage.json" />
+    <Script Include="AdTypeSource.json" />
+    <Script Include="AdTypeStage.json" />
+    <Script Include="BingAdsAnalyticsLinkedService.json" />
+    <Script Include="BingAdsBlobStorageLinkedService.json" />
+    <Script Include="BingAdsDwToSqlDw.json" />
+    <Script Include="BingAdsMeasuresToSqlDw.json" />
+    <Script Include="BingAdsSourceToStaging.json" />
+    <Script Include="BingAdsSqlDWLinkedService.json" />
+    <Script Include="BingAdsSqlLinkedService.json" />
+    <Script Include="BingAdsStagingToDw.json" />
+    <Script Include="BingAdsStoreLinkedService.json" />
+    <Script Include="CouponBatchSource.json" />
+    <Script Include="CouponBatchStage.json" />
+    <Script Include="CouponRedemptionSource.json" />
+    <Script Include="CouponRedemptionStage.json" />
+    <Script Include="CouponSource.json" />
+    <Script Include="CouponStage.json" />
+    <Script Include="CustomerSource.json" />
+    <Script Include="CustomerStage.json" />
+    <Script Include="DimAccount.json" />
+    <Script Include="DimAccountSqlDw.json" />
+    <Script Include="DimAccountType.json" />
+    <Script Include="DimAccountTypeSqlDw.json" />
+    <Script Include="DimAdType.json" />
+    <Script Include="DimAdTypeSqlDw.json" />
+    <Script Include="DimAgency.json" />
+    <Script Include="DimAgencySqlDw.json" />
+    <Script Include="DimCoupon.json" />
+    <Script Include="DimCouponBatch.json" />
+    <Script Include="DimCouponBatchSqlDw.json" />
+    <Script Include="DimCouponRedemption.json" />
+    <Script Include="DimCouponRedemptionSqlDw.json" />
+    <Script Include="DimCouponSqlDw.json" />
+    <Script Include="DimCustomer.json" />
+    <Script Include="DimCustomerSqlDw.json" />
+    <Script Include="DimDistributionChannel.json" />
+    <Script Include="DimDistributionChannelSqlDw.json" />
+    <Script Include="DimMedium.json" />
+    <Script Include="DimMediumSqlDw.json" />
+    <Script Include="DistributionChannelSource.json" />
+    <Script Include="DistributionChannelStage.json" />
+    <Script Include="FactBingAdsSqlDw.json" />
+    <Script Include="MediumSource.json" />
+    <Script Include="MediumStage.json" />
+  </ItemGroup>
+  <Import Project="$(AppData)\Microsoft\DataFactory Tools for Visual Studio\MsBuild\1.0\DataFactory.targets" />
+</Project>

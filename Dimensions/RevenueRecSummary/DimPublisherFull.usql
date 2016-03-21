@@ -1,0 +1,36 @@
+﻿USE DATABASE UcmDatawarehouse;
+@PublisherTemp =
+    EXTRACT PublisherId int,
+            PublisherName string
+    FROM @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/REVENUERECSUMMARY/Publisher.tsv"
+    USING Extractors.Tsv();
+
+@DimPublisher =
+    SELECT PublisherId AS PublisherKey,
+           PublisherName,          
+           DateTime.Now AS CreatedDate,
+           Environment.UserDomainName AS CreatedBy
+               FROM @PublisherTemp;
+
+DROP TABLE IF EXISTS DimPublisher;
+
+CREATE TABLE DimPublisher
+(
+    PublisherKey int,    
+    PublisherName string,    
+    DWCreatedDate DateTime,
+    DWCreatedBy string,    
+    INDEX idx1
+    CLUSTERED(PublisherKey ASC)
+    PARTITIONED BY
+    HASH(PublisherKey)
+);
+
+INSERT INTO UcmDatawarehouse.dbo.DimPublisher
+SELECT *
+FROM @DimPublisher;
+
+OUTPUT @DimPublisher
+TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/DimPublisher.tsv"
+USING Outputters.Tsv(quoting : false);
+

@@ -1,0 +1,108 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+
+DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/Medium"+@DateTimeStamp+".tsv";
+DECLARE @OutputFilepath string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimMedium.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@DeltaDataExtract =
+    EXTRACT MediumId int,
+       Medium string,
+       RefreshDate DateTime
+    FROM @InputFilepath
+    USING Extractors.Tsv(silent : true);
+
+@SchematizedDim =
+    SELECT *
+    FROM DimMedium;
+
+@Dim_UnmatchedCode = SELECT MediumId FROM @DeltaDataExtract
+    EXCEPT DISTINCT 
+    SELECT MediumId FROM @SchematizedDim;
+
+@Temp_Max =
+    SELECT MAX(MediumKey) AS MaxKey,
+           - 1 AS MediumKey
+    FROM @SchematizedDim;
+
+@DimRecords_Insert =
+    SELECT ROW_NUMBER() OVER(ORDER BY Pd.MediumId) AS Rn,
+           - 1 AS MediumKey,
+           Pd.MediumId,
+           Medium,
+           1 AS DwVersion,
+           DateTime.Now AS DwCreatedDate,
+           Environment.UserDomainName AS DwCreatedBy,
+           DateTime.Now AS DwModifiedDate,
+           Environment.UserDomainName AS DwModifiedBy
+    FROM @Dim_UnmatchedCode AS Du
+         INNER JOIN
+             @DeltaDataExtract AS Pd
+         ON Du.MediumId == Pd.MediumId;
+
+@DimType2_Update =
+    SELECT MediumKey,
+           De.MediumId,
+           Td.Medium,
+           (De.DwVersion + 1) AS DwVersion,
+           DwCreatedDate,
+           DwCreatedBy,
+           DateTime.Now AS DwModifiedDate,
+           Environment.UserDomainName AS DwModifiedBy
+    FROM @DeltaDataExtract AS Td
+         INNER JOIN
+             @SchematizedDim AS De
+         ON De.MediumId == Td.MediumId
+    WHERE De.Medium != Td.Medium;
+
+@DimUnmatchedSchematized =
+    SELECT MediumId
+    FROM @SchematizedDim
+    EXCEPT DISTINCT
+    SELECT MediumId
+    FROM @DimType2_Update;
+
+@DimSchematizedRecords =
+    SELECT MediumKey,
+           De.MediumId,
+           Medium,
+           DwVersion,
+           DwCreatedDate,
+           DwCreatedBy,
+           DwUpdatedDate,
+           DwUpdatedBy
+    FROM @SchematizedDim AS De
+         INNER JOIN
+             @DimUnmatchedSchematized AS Ds
+         ON De.MediumId == Ds.MediumId;
+
+@DimTable_Full =
+    SELECT *
+    FROM @DimSchematizedRecords
+    UNION DISTINCT
+    SELECT *
+    FROM @DimType2_Update
+    UNION DISTINCT
+    SELECT Convert.ToInt32((Di.Rn + Tm.MaxKey)) AS MediumKey,
+           MediumId,
+           Medium,
+           Di.DwVersion,
+           Di.DwCreatedDate,
+           Di.DwCreatedBy,
+           Di.DwModifiedDate,
+           Di.DwModifiedBy
+    FROM @DimRecords_Insert AS Di
+         INNER JOIN
+             @Temp_Max AS Tm
+         ON Di.MediumKey == Tm.MediumKey;        
+
+TRUNCATE TABLE DimMedium; 
+ 
+INSERT INTO UcmDatawarehouse.dbo.DimMedium
+SELECT *  
+       FROM @DimTable_Full;
+
+
+OUTPUT @DimTable_Full
+TO @OutputFilepath
+USING Outputters.Tsv(quoting:false);

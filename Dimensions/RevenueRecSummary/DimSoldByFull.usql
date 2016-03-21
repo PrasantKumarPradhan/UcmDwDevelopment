@@ -1,0 +1,38 @@
+﻿USE DATABASE UcmDatawarehouse;
+@SoldByTemp =
+    EXTRACT SoldById int,
+            SoldBy string
+    FROM @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/REVENUERECSUMMARY/SoldBy.tsv"
+    USING Extractors.Tsv(silent : true);
+
+@DimSoldBy =
+    SELECT  SoldById AS SoldByKey,
+           SoldBy,           
+           DateTime.Now AS CreatedDate,
+           Environment.UserDomainName AS CreatedBy        
+    FROM @SoldByTemp;
+
+DROP TABLE IF EXISTS UcmDatawarehouse.dbo.DimSoldBy;
+CREATE TABLE UcmDatawarehouse.dbo.DimSoldBy
+(
+    SoldByKey int,
+   
+    SoldBy string,
+    
+    DWCreatedDate DateTime,
+    DWCreatedBy string,
+       INDEX idx1
+    CLUSTERED(SoldByKey ASC)
+    PARTITIONED BY
+    HASH(SoldByKey)
+);
+
+
+INSERT INTO UcmDatawarehouse.dbo.DimSoldBy
+SELECT *
+FROM @DimSoldBy;
+
+
+OUTPUT @DimSoldBy
+TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/DimSoldBy.tsv"
+USING Outputters.Tsv(quoting : false);

@@ -1,0 +1,280 @@
+﻿USE DATABASE UcmDatawarehouse;
+
+@RevenueRev =
+    EXTRACT RevenueRecDateKey int,
+            CampaignId int?,
+            AdvAccountId int?,
+            PubAccountId int?,
+            DistributionChannelId int?,
+            MediumId int?,
+            PricingModelId int?,
+            DeliveryDateKey int,
+            TransactionTypeId int?,
+            SoldBy string,
+            PublishedBy string,
+            Sku string,
+            CurrencyId int?,
+            ServiceLevelId int?,
+            ImpressionCnt long?,
+            AcquisitionChannelRevenueActual decimal?,
+            GrossAmt decimal?,
+            AgencyCommAmt decimal?,
+            ClickCnt decimal?,
+            SalesHouseCommAmt decimal?,
+            PublisherEarnings decimal?,
+            OperationCostAllowance decimal?,
+            MSRevenue decimal?,
+            RevenueMS decimal?,
+            RevenuePartner decimal?,
+            RevenueSyndicated decimal?,
+            AgencyCommMS decimal?,
+            AgencyCommPartner decimal?,
+            AgencyCommSyndicated decimal?,
+            SalesHouseCommMS decimal?,
+            SalesHouseCommSyndicated decimal?,
+            SalesHouseCommPartner decimal?,
+            CouponConsumedAmount decimal?,
+            CouponConsumedAmountMS decimal?,
+            MSAmount decimal?,
+            RevAmount decimal?,
+            suffix string
+    FROM @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/REVENUERECSUMMARY/{suffix:*}"
+    USING Extractors.Tsv(silent : true);
+
+
+@TempRevRevenue =
+    SELECT RevenueRecDateKey,
+           CampaignId,
+           AdvAccountId,
+           PubAccountId,
+           DistributionChannelId,
+           MediumId,
+           PricingModelId,
+           DeliveryDateKey,
+           TransactionTypeId,
+           SoldBy,
+           PublishedBy,
+           Sku,
+           CurrencyId,
+           ServiceLevelId,
+           ImpressionCnt,
+           AcquisitionChannelRevenueActual,
+           GrossAmt,
+           AgencyCommAmt,
+           ClickCnt,
+           SalesHouseCommAmt,
+           PublisherEarnings,
+           OperationCostAllowance,
+           MSRevenue,
+           RevenueMS,
+           RevenuePartner,
+           RevenueSyndicated,
+           AgencyCommMS,
+           AgencyCommPartner,
+           AgencyCommSyndicated,
+           SalesHouseCommMS,
+           SalesHouseCommSyndicated,
+           SalesHouseCommPartner,
+           CouponConsumedAmount,
+           CouponConsumedAmountMS,
+           MSAmount,
+           RevAmount
+    FROM @RevenueRev;
+
+@SoldBy =
+    SELECT DISTINCT SoldBy
+    FROM @TempRevRevenue;
+
+@SoldBy =
+    SELECT DISTINCT (ROW_NUMBER() OVER(ORDER BY SoldBy)) AS SoldById,
+                    SoldBy
+    FROM @SoldBy;
+
+OUTPUT @SoldBy
+TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/REVENUERECSUMMARY/SoldBy.tsv"
+USING Outputters.Tsv(quoting : false);
+
+@PublishedBy =
+    SELECT DISTINCT PublishedBy
+    FROM @TempRevRevenue;
+
+@PublishedBy =
+    SELECT DISTINCT (ROW_NUMBER() OVER(ORDER BY PublishedBy)) AS PublisherId,
+                    PublishedBy AS PublisherBy
+    FROM @PublishedBy;
+
+OUTPUT @PublishedBy
+TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/REVENUERECSUMMARY/Publisher.tsv"
+USING Outputters.Tsv(quoting : false);
+
+@Sku =
+    SELECT DISTINCT Sku
+    FROM @TempRevRevenue;
+
+@Sku =
+    SELECT DISTINCT (ROW_NUMBER() OVER(ORDER BY Sku)) AS SkuId,
+                    Sku AS SkuName
+    FROM @Sku;
+
+OUTPUT @Sku
+TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/REVENUERECSUMMARY/Sku.tsv"
+USING Outputters.Tsv(quoting : false);    
+
+@TempDimDate =
+    SELECT *
+    FROM UcmDatawarehouse.dbo.DimDate;
+
+@FactRev_AccountKey_RevDateKey =
+    SELECT Dt.DateKey AS RevRecDateKey,
+           CampaignId,
+           AdvAccountId,
+           PubAccountId,
+           DistributionChannelId,
+           MediumId,
+           PricingModelId,
+           DeliveryDateKey,
+           TransactionTypeId,
+           SoldBy,
+           PublishedBy,
+           Sku,
+           CurrencyId,
+           ServiceLevelId,
+           ImpressionCnt,
+           AcquisitionChannelRevenueActual,
+           GrossAmt,
+           AgencyCommAmt,
+           ClickCnt,
+           SalesHouseCommAmt,
+           PublisherEarnings,
+           OperationCostAllowance,
+           MSRevenue,
+           RevenueMS,
+           RevenuePartner,
+           RevenueSyndicated,
+           AgencyCommMS,
+           AgencyCommPartner,
+           AgencyCommSyndicated,
+           SalesHouseCommMS,
+           SalesHouseCommSyndicated,
+           SalesHouseCommPartner,
+           CouponConsumedAmount,
+           CouponConsumedAmountMS,
+           MSAmount,
+           RevAmount,
+           DateTime.Now AS CreatedDate,
+           Environment.UserDomainName AS CreatedBy,
+           DateTime.Now AS ModifiedDate,
+           Environment.UserDomainName AS ModifiedBy
+    FROM @TempRevRevenue AS Rev
+         LEFT OUTER JOIN
+             @TempDimDate AS Dt
+         ON Rev.RevenueRecDateKey == Dt.SimpleDate;
+
+@FactRev_AccountKey_DeliveryDateKey =
+    SELECT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY RevRecDateKey, CampaignId, AdvAccountId)) AS RevRecFactKey,
+           RevRecDateKey,
+           CampaignId,
+           AdvAccountId,
+           PubAccountId,
+           DistributionChannelId,
+           MediumId,
+           PricingModelId,
+           Dt.DateKey AS DeliveryDateKey,
+           TransactionTypeId,
+           SoldBy,
+           PublishedBy,
+           Sku,
+           CurrencyId,
+           ServiceLevelId,
+           ImpressionCnt,
+           AcquisitionChannelRevenueActual,
+           GrossAmt,
+           AgencyCommAmt,
+           ClickCnt,
+           SalesHouseCommAmt,
+           PublisherEarnings,
+           OperationCostAllowance,
+           MSRevenue,
+           RevenueMS,
+           RevenuePartner,
+           RevenueSyndicated,
+           AgencyCommMS,
+           AgencyCommPartner,
+           AgencyCommSyndicated,
+           SalesHouseCommMS,
+           SalesHouseCommSyndicated,
+           SalesHouseCommPartner,
+           CouponConsumedAmount,
+           CouponConsumedAmountMS,
+           MSAmount,
+           RevAmount,
+           1 AS TableVersion,
+           CreatedDate,
+           CreatedBy,
+           ModifiedDate,
+           ModifiedBy
+    FROM @FactRev_AccountKey_RevDateKey AS Rev
+         LEFT OUTER JOIN
+             @TempDimDate AS Dt
+         ON Rev.DeliveryDateKey == Dt.SimpleDate;
+
+DROP TABLE IF EXISTS UcmDatawarehouse.dbo.FactRevenueRecSummary;
+
+CREATE TABLE UcmDatawarehouse.dbo.FactRevenueRecSummary
+(
+    RevRecFactKey int,
+    RevenueRecDateKey int?,
+    CampaignId int?,
+    AdvAccountId int?,
+    PubAccountId int?,
+    DistributionChannelId int?,
+    MediumId int?,
+    PricingModelId int?,
+    DeliveryDateKey int?,
+    TransactionTypeId int?,
+    SoldBy string,
+    PublishedBy string,
+    Sku string,
+    CurrencyId int?,
+    ServiceLevelId int?,
+    ImpressionCnt long?,
+    AcquisitionChannelRevenueActual decimal?,
+    GrossAmt decimal?,
+    AgencyCommAmt decimal?,
+    ClickCnt decimal?,
+    SalesHouseCommAmt decimal?,
+    PublisherEarnings decimal?,
+    OperationCostAllowance decimal?,
+    MSRevenue decimal?,
+    RevenueMS decimal?,
+    RevenuePartner decimal?,
+    RevenueSyndicated decimal?,
+    AgencyCommMS decimal?,
+    AgencyCommPartner decimal?,
+    AgencyCommSyndicated decimal?,
+    SalesHouseCommMS decimal?,
+    SalesHouseCommSyndicated decimal?,
+    SalesHouseCommPartner decimal?,
+    CouponConsumedAmount decimal?,
+    CouponConsumedAmountMS decimal?,
+    MSAmount decimal?,
+    RevAmount decimal?,
+    TableVersion int,
+    DWCreatedDate DateTime,
+    DWCreatedBy string,
+    DWUpdatedDate DateTime,
+    DWUpdatedBy string,
+    INDEX Idx1
+    CLUSTERED(RevRecFactKey ASC)
+    PARTITIONED BY
+    HASH(RevRecFactKey)
+);
+
+INSERT INTO UcmDatawarehouse.dbo.FactRevenueRecSummary
+SELECT *
+FROM @FactRev_AccountKey_DeliveryDateKey;
+
+OUTPUT @FactRev_AccountKey_DeliveryDateKey
+TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/FactRevenueRecSummary.tsv"
+USING Outputters.Tsv(quoting : false);
+

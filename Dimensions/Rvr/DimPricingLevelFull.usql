@@ -1,0 +1,62 @@
+﻿DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/PricingLevel.tsv";
+DECLARE @OutputStream string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/RVR/DimPricingLevel.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@TempPricingLevel =
+    EXTRACT PricingLevel string,
+            RefreshDate DateTime
+    FROM @InputFilepath 
+    USING Extractors.Tsv(quoting : false);
+
+@DimPricingLevel =
+    SELECT DISTINCT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY PricingLevel)) AS PricingLevelKey,
+                    PricingLevel,
+                    DateTime.Now AS CreatedDate,
+                    Environment.UserDomainName AS CreatedBy
+    FROM @TempPricingLevel;
+
+
+DROP TABLE IF EXISTS DimPricingLevelDegeneratedTemp;
+
+CREATE TABLE DimPricingLevelDegeneratedTemp
+(
+    PricingLevelKey int,
+    PricingLevel string,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    INDEX idx1
+    CLUSTERED(PricingLevelKey ASC)
+    PARTITIONED BY
+    HASH(PricingLevelKey)
+
+);
+
+INSERT INTO DimPricingLevelDegeneratedTemp
+SELECT *
+FROM DimPricingLevelDegenerated;
+
+DROP TABLE IF EXISTS DimPricingLevelDegenerated;
+
+CREATE TABLE DimPricingLevelDegenerated
+(
+    PricingLevelKey int,
+    PricingLevel string,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    INDEX idx1
+    CLUSTERED(PricingLevelKey ASC)
+    PARTITIONED BY
+    HASH(PricingLevelKey)
+
+);
+
+INSERT INTO DimPricingLevelDegenerated
+SELECT *
+FROM @DimPricingLevel;
+
+
+
+OUTPUT @DimPricingLevel TO @OutputStream 
+USING Outputters.Tsv(quoting : false);
+

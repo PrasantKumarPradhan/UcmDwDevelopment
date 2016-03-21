@@ -1,0 +1,56 @@
+﻿DECLARE @input_filepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/REVENUERECSUMMARY/Sku.tsv";
+DECLARE @output_filepath string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/DimSkuDegenerated.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@DeltaDataExtract =
+    EXTRACT Sku string            
+               FROM @input_filepath
+    USING Extractors.Tsv();
+
+@SchematizedDim =
+    SELECT *
+    FROM DimSkuDegenerated;
+
+@Dim_UnmatchedCode = SELECT Sku FROM @DeltaDataExtract
+    EXCEPT DISTINCT 
+    SELECT Sku FROM @SchematizedDim;
+
+@Temp_Max =
+    SELECT MAX(SkuKey) AS MaxKey,
+           - 1 AS SkuKey
+    FROM @SchematizedDim;
+
+@DimRecords_Insert =
+    SELECT ROW_NUMBER() OVER(ORDER BY Pd.Sku) AS Rn,
+           - 1 AS SkuKey,
+            Pd.Sku,
+           DateTime.Now AS DwCreatedDate,
+           Environment.UserDomainName AS DwCreatedBy      
+    FROM @Dim_UnmatchedCode AS Du
+         INNER JOIN
+             @DeltaDataExtract AS Pd
+         ON Du.Sku == Pd.Sku;
+
+@DimTable_Full =    
+    SELECT Convert.ToInt32((Di.Rn + Tm.MaxKey)) AS SkuKey,
+           Sku,
+            Di.DwCreatedDate,
+           Di.DwCreatedBy       
+    FROM @DimRecords_Insert AS Di
+         INNER JOIN
+             @Temp_Max AS Tm
+         ON Di.SkuKey == Tm.SkuKey;  
+		 
+@DimJoin = SELECT * FROM @SchematizedDim UNION SELECT * FROM @DimTable_Full;
+      
+ 
+ 
+INSERT INTO DimSkuDegenerated
+SELECT *  
+       FROM @DimTable_Full;
+
+
+OUTPUT @DimJoin
+TO @output_filepath
+USING Outputters.Tsv(quoting:false);

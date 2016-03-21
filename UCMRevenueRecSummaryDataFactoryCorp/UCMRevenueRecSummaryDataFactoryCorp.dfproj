@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>a835829f-aafd-473c-9b7b-2023f7de63ef</ProjectGuid>
+    <OutputType>File</OutputType>
+    <AssemblyName>DataFactory</AssemblyName>
+    <ApiVersion>2015-08-01</ApiVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <Name>UCMRevenueRecSummaryDataFactoryCorp</Name>
+    <RootNamespace>UCMRevenueRecSummaryDataFactoryCorp</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>false</DebugSymbols>
+    <OutputPath>bin\Release\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ADFConfigFileToPublish>
+    </ADFConfigFileToPublish>
+  </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="Dependencies\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Script Include="AdlsToSqlDwCopyPipeline.json" />
+    <Script Include="AzureDataLakeAnalyticsLinkedService.json" />
+    <Script Include="AzureDataLakeStoreLinkedService.json" />
+    <Script Include="DimPublisherOutputDataset.json" />
+    <Script Include="DimPublisherSqlDwOutputDataset.json" />
+    <Script Include="DimSkuOutputDataset.json" />
+    <Script Include="DimSkuSqlDwOutputDataset.json" />
+    <Script Include="DimSoldbyOutputDataset.json" />
+    <Script Include="DimSoldBySqlDwOutputDataset.json" />
+    <Script Include="FactRevenueRecSummaryOutputDataset.json" />
+    <Script Include="FactRevenueRecSummarySqlDwOutputDataset.json" />
+    <Script Include="PublisherInputDataset.json" />
+    <Script Include="RevenueRecDwPipeline.json" />
+    <Script Include="RevenueRecSummaryAzureStorageLinkedService.json" />
+    <Script Include="RevenueRecSummaryDataSourceDataset.json" />
+    <Script Include="RevenueRecSummaryDataStageDataset.json" />
+    <Script Include="RevenueRecSummaryDegenerationPipeline.json" />
+    <Script Include="RevenueRecSummaryFileServerLinkedService.json" />
+    <Script Include="RevenueRecSummaryLinkedService.json" />
+    <Script Include="RevenueRecSummarySourceFileCopyPipeline.json" />
+    <Script Include="SkuInputDataset.json" />
+    <Script Include="SoldByInputDataset.json" />
+    <Script Include="UcmAzureSqlDwLinkedService.json" />
+  </ItemGroup>
+  <Import Project="$(AppData)\Microsoft\DataFactory Tools for Visual Studio\MsBuild\1.0\DataFactory.targets" />
+</Project>

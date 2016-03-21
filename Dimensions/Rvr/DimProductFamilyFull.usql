@@ -1,0 +1,77 @@
+﻿DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/RVR/ProductFamily.tsv";
+DECLARE @OutputStream string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/RVR/DimProductFamilyDegenerated.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@ProductFamily =
+    EXTRACT ProductFamilyCode string,
+            ProductFamily string,
+            RefreshDate DateTime
+    FROM @InputFilepath 
+    USING Extractors.Tsv(quoting : false);
+
+
+@DimProductFamily =
+    SELECT DISTINCT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY ProductFamilyCode)) AS ProductFamilyKey,
+                    ProductFamilyCode,
+                    ProductFamily,
+                    1 AS DwVersion,
+                    DateTime.Now AS CreatedDate,
+                    Environment.UserDomainName AS CreatedBy,
+                    DateTime.Now AS ModifiedDate,
+                    Environment.UserDomainName AS ModifiedBy
+    FROM @ProductFamily;
+
+// Storing backup of Catalog table
+
+DROP TABLE IF EXISTS DimProductFamilyTemp;
+
+CREATE TABLE DimProductFamilyTemp
+(
+    ProductFamilyKey int,
+    ProductFamilyCode string,
+    ProductFamily string,
+    DwVersion int,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    DwUpdatedDate DateTime,
+    DwUpdatedBy string,
+    INDEX idx1
+    CLUSTERED(ProductFamilyKey ASC)
+    PARTITIONED BY
+    HASH(ProductFamilyKey)
+
+);
+
+
+INSERT INTO DimProductFamilyTemp
+SELECT *
+FROM DimProductFamily;
+
+
+DROP TABLE IF EXISTS DimProductFamily;
+
+CREATE TABLE DimProductFamily
+(
+    ProductFamilyKey int,
+    ProductFamilyCode string,
+    ProductFamily string,
+    DwVersion int,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    DwUpdatedDate DateTime,
+    DwUpdatedBy string,
+    INDEX idx1
+    CLUSTERED(ProductFamilyKey ASC)
+    PARTITIONED BY
+    HASH(ProductFamilyKey)
+
+);
+
+INSERT INTO DimProductFamily
+SELECT *
+FROM @DimProductFamily;
+
+
+OUTPUT @DimProductFamily TO @OutputStream 
+USING Outputters.Tsv(quoting : false);

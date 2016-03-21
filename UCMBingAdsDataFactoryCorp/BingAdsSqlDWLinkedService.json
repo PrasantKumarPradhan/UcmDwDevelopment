@@ -1,0 +1,11 @@
+{
+  "name": "BingAdsSqlDWLinkedService",
+  "properties": {
+    "description": "",
+    "type": "AzureSqlDW",
+    "typeProperties": {
+      "connectionString": "Data Source=tcp:ucmdatawarehousesqldev.database.windows.net,1433;Initial Catalog=UcmSqlDataWarehouse;Integrated Security=False;User ID=ucmdwsuper;Password=**********;Connect Timeout=30;Encrypt=True"
+    }
+  },
+  "$schema": "http://datafactories.schema.management.azure.com/internalschemas/2015-08-01/Microsoft.DataFactory.linkedservice.json"
+}

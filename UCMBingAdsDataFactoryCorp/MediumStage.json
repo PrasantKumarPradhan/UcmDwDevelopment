@@ -1,0 +1,48 @@
+{
+  "name": "MediumStage",
+  "properties": {
+    "published": false,
+    "type": "AzureDataLakeStore",
+    "linkedServiceName": "BingAdsStoreLinkedService",
+    "typeProperties": {
+      "fileName": "Medium{Year}{Month}{Day}.tsv",
+      "folderPath": "UCMDW/STAGING/BINGADS/",
+      "format": {
+        "type": "TextFormat",
+        "columnDelimiter": "\t",
+        "nullValue": ""
+      },
+      "partitionedBy": [
+        {
+          "name": "Year",
+          "value": {
+            "type": "DateTime",
+            "date": "SliceStart",
+            "format": "yyyy"
+          }
+        },
+        {
+          "name": "Month",
+          "value": {
+            "type": "DateTime",
+            "date": "SliceStart",
+            "format": "MM"
+          }
+        },
+        {
+          "name": "Day",
+          "value": {
+            "type": "DateTime",
+            "date": "SliceStart",
+            "format": "dd"
+          }
+        }
+      ]
+    },
+    "availability": {
+      "frequency": "Hour",
+      "interval": 1
+    }
+  },
+  "$schema": "http://datafactories.schema.management.azure.com/internalschemas/2015-08-01/Microsoft.DataFactory.table.json"
+}

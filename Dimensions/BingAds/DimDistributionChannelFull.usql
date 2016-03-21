@@ -1,0 +1,63 @@
+﻿DECLARE @DateTimeStamp string = DateTime.Now.ToString("yyyyMMdd");
+
+DECLARE @InputFilepath string = "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/STAGING/BINGADS/DistributionChannel"+@DateTimeStamp+".tsv";
+DECLARE @OutputFilepath string= "swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/BINGADS/DimDistributionChannel.tsv";
+
+USE DATABASE UcmDatawarehouse;
+
+@TempDistributionChannel =
+    EXTRACT DistributionChannelId int,
+            DistributionChannelName string,
+            LanguageLocaleId int,
+            ProductSiteId int,
+            AdMetrixCountryId int,
+            CreatedDtim DateTime,
+            PilotFlag int
+    FROM @InputFilepath
+    USING Extractors.Tsv();
+
+@DimDistributionChannel =
+    SELECT Convert.ToInt32(ROW_NUMBER() OVER(ORDER BY DistributionChannelId)) AS DistributionChannelKey,
+           DistributionChannelId,
+           DistributionChannelName,
+           LanguageLocaleId,
+           ProductSiteId,
+           AdMetrixCountryId,
+           PilotFlag,
+           1 AS DwVersion,
+           DateTime.Now AS CreatedDate,
+           Environment.UserDomainName AS CreatedBy,
+           DateTime.Now AS ModifiedDate,
+           Environment.UserDomainName AS ModifiedBy
+    FROM @TempDistributionChannel WHERE DistributionChannelId !=0;
+
+DROP TABLE IF EXISTS DimDistributionChannel;
+
+CREATE TABLE DimDistributionChannel
+(
+    DistributionChannelKey int,
+    DistributionChannelId int,
+    DistributionChannelName string,
+    LanguageLocaleId int,
+    ProductSiteId int,
+    AdMetrixCountryId int,
+    PilotFlag int,
+    DwVersion int,
+    DwCreatedDate DateTime,
+    DwCreatedBy string,
+    DwUpdatedDate DateTime,
+    DwUpdatedBy string,
+    INDEX idx1
+    CLUSTERED(DistributionChannelKey ASC)
+    PARTITIONED BY
+    HASH(DistributionChannelKey)
+);
+ 
+ 
+INSERT INTO DimDistributionChannel
+SELECT *  
+       FROM @DimDistributionChannel;
+
+OUTPUT @DimDistributionChannel
+TO @OutputFilepath
+USING Outputters.Tsv(quoting:false); 

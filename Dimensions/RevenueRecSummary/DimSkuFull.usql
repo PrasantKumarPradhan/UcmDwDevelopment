@@ -1,0 +1,36 @@
+﻿USE DATABASE UcmDatawarehouse;
+@SkuTemp =
+    EXTRACT SkuId int,
+            SkuName string
+    FROM @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/ENRICHED/REVENUERECSUMMARY/Sku.tsv"
+    USING Extractors.Tsv(silent : true);
+
+@DimSku =
+    SELECT SkuId AS SkuKey,
+           SkuName,
+           DateTime.Now AS CreatedDate,
+           Environment.UserDomainName AS CreatedBy           
+    FROM @SkuTemp;
+
+DROP TABLE IF EXISTS DimSku;
+CREATE TABLE DimSku
+(
+    SkuKey int,
+    SkuName string,
+    DWCreatedDate DateTime,
+    DWCreatedBy string,
+    INDEX idx1
+    CLUSTERED(SkuKey ASC)
+    PARTITIONED BY
+    HASH(SkuKey)
+);
+
+
+INSERT INTO DimSku
+SELECT *
+FROM @DimSku;
+
+
+OUTPUT @DimSku
+TO @"swebhdfs://ucmdatalakestorecorp.azuredatalakestore.net/UCMDW/DATAWAREHOUSE/DimSku.tsv"
+USING Outputters.Tsv(quoting : false);
