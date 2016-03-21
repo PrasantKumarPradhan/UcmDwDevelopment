@@ -16,6 +16,7 @@ USE DATABASE UcmDatawarehouse;
     EXCEPT DISTINCT 
     SELECT SoldBy FROM @SchematizedDim;
 
+
 @Temp_Max =
     SELECT MAX(SoldByKey) AS MaxKey,
            - 1 AS SoldByKey
