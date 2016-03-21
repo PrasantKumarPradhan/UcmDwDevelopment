@@ -17,6 +17,8 @@ Project("{3466B219-07DB-46AE-8697-CFD2A1650EC8}") = "UCMBingAdsDataFactoryCorp",
 EndProject
 Project("{F5034706-568F-408A-B7B3-4D38C6DB8A32}") = "SourcePowerShell", "SourcePowerShell\SourcePowerShell.pssproj", "{11D9AC8F-CB12-412A-8023-AE5256B09F5F}"
 EndProject
+Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "UcmStagingAreaSubscriber", "UcmStagingAreaSubscriber\UcmStagingAreaSubscriber.sqlproj", "{E7258F13-EEE1-4325-A18B-FFD36260E96D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,6 +77,18 @@ Global
 		{11D9AC8F-CB12-412A-8023-AE5256B09F5F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{11D9AC8F-CB12-412A-8023-AE5256B09F5F}.Release|x86.ActiveCfg = Release|Any CPU
 		{11D9AC8F-CB12-412A-8023-AE5256B09F5F}.Release|x86.Build.0 = Release|Any CPU
+		{E7258F13-EEE1-4325-A18B-FFD36260E96D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E7258F13-EEE1-4325-A18B-FFD36260E96D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E7258F13-EEE1-4325-A18B-FFD36260E96D}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{E7258F13-EEE1-4325-A18B-FFD36260E96D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E7258F13-EEE1-4325-A18B-FFD36260E96D}.Debug|x86.Build.0 = Debug|Any CPU
+		{E7258F13-EEE1-4325-A18B-FFD36260E96D}.Debug|x86.Deploy.0 = Debug|Any CPU
+		{E7258F13-EEE1-4325-A18B-FFD36260E96D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E7258F13-EEE1-4325-A18B-FFD36260E96D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E7258F13-EEE1-4325-A18B-FFD36260E96D}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{E7258F13-EEE1-4325-A18B-FFD36260E96D}.Release|x86.ActiveCfg = Release|Any CPU
+		{E7258F13-EEE1-4325-A18B-FFD36260E96D}.Release|x86.Build.0 = Release|Any CPU
+		{E7258F13-EEE1-4325-A18B-FFD36260E96D}.Release|x86.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

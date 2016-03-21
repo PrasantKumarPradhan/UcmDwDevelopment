@@ -1,0 +1,144 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Name>UcmStagingAreaSubscriber</Name>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>4.1</ProjectVersion>
+    <ProjectGuid>{e7258f13-eee1-4325-a18b-ffd36260e96d}</ProjectGuid>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql120DatabaseSchemaProvider</DSP>
+    <OutputType>Database</OutputType>
+    <RootPath>
+    </RootPath>
+    <RootNamespace>UcmStagingAreaSubscriber</RootNamespace>
+    <AssemblyName>UcmStagingAreaSubscriber</AssemblyName>
+    <ModelCollation>1033,CI</ModelCollation>
+    <DefaultFileStructure>BySchemaAndSchemaType</DefaultFileStructure>
+    <DeployToDatabase>True</DeployToDatabase>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetLanguage>CS</TargetLanguage>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <SqlServerVerification>False</SqlServerVerification>
+    <IncludeCompositeObjects>True</IncludeCompositeObjects>
+    <TargetDatabaseSet>True</TargetDatabaseSet>
+    <DefaultCollation>SQL_Latin1_General_CP1_CI_AS</DefaultCollation>
+    <DefaultFilegroup>PRIMARY</DefaultFilegroup>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">11.0</VisualStudioVersion>
+    <!-- Default to the v11.0 targets path if the targets file for the current VS version is not found -->
+    <SSDTExists Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets')">True</SSDTExists>
+    <VisualStudioVersion Condition="'$(SSDTExists)' == ''">11.0</VisualStudioVersion>
+  </PropertyGroup>
+  <Import Condition="'$(SQLDBExtensionsRefPath)' != ''" Project="$(SQLDBExtensionsRefPath)\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <ItemGroup>
+    <Folder Include="Properties" />
+    <Folder Include="Programmablity" />
+    <Folder Include="Tables" />
+    <Folder Include="Programmablity\Functions" />
+    <Folder Include="Programmablity\StoredProcedures" />
+    <Folder Include="Programmablity\Views" />
+    <Folder Include="Deployment" />
+  </ItemGroup>
+  <ItemGroup>
+    <Build Include="Programmablity\Functions\fn_BreakString.sql" />
+    <Build Include="Programmablity\Functions\fn_GetLastSuccessfulProcessDateTime.sql" />
+    <Build Include="Programmablity\Views\vAppStagingProcess.sql" />
+    <Build Include="Programmablity\Views\vAppStagingProcessQueue.sql" />
+    <Build Include="Programmablity\StoredProcedures\prc_APPStagingProcessEnd.sql" />
+    <Build Include="Programmablity\StoredProcedures\prc_APPStagingProcessQueueEnd.sql" />
+    <Build Include="Programmablity\StoredProcedures\prc_APPStagingProcessQueueStart.sql" />
+    <Build Include="Programmablity\StoredProcedures\prc_APPStagingProcessStart.sql" />
+    <Build Include="Programmablity\StoredProcedures\prc_ArchiveHistoricalLogData.sql" />
+    <Build Include="Programmablity\StoredProcedures\prc_MergeDelta.sql" />
+    <Build Include="Programmablity\StoredProcedures\prc_MergeDeltaGenCode.sql" />
+    <Build Include="Programmablity\StoredProcedures\prc_SystemParameterLet.sql" />
+    <Build Include="Programmablity\StoredProcedures\prc_SystemParameterSet.sql" />
+    <Build Include="Programmablity\StoredProcedures\prc_TruncateTable.sql" />
+    <Build Include="Tables\Account.sql" />
+    <Build Include="Tables\AccountAccountRelation.sql" />
+    <Build Include="Tables\AccountAccountRelationQueue.sql" />
+    <Build Include="Tables\AccountPaymentInstr.sql" />
+    <Build Include="Tables\AccountPaymentInstrQueue.sql" />
+    <Build Include="Tables\AccountQueue.sql" />
+    <Build Include="Tables\AccountRelation.sql" />
+    <Build Include="Tables\AccountRelationQueue.sql" />
+    <Build Include="Tables\AdType.sql" />
+    <Build Include="Tables\AdTypeQueue.sql" />
+    <Build Include="Tables\AgencyCustomerAccountRelation.sql" />
+    <Build Include="Tables\AgencyCustomerAccountRelationQueue.sql" />
+    <Build Include="Tables\APPStagingProcess.sql" />
+    <Build Include="Tables\APPStagingProcessQueue.sql" />
+    <Build Include="Tables\APPStagingProcessStatus.sql" />
+    <Build Include="Tables\AppStagingTable.sql" />
+    <Build Include="Tables\CampaignQueue.sql" />
+    <Build Include="Tables\Country.sql" />
+    <Build Include="Tables\CountryQueue.sql" />
+    <Build Include="Tables\Coupon.sql" />
+    <Build Include="Tables\CouponBatch.sql" />
+    <Build Include="Tables\CouponBatchQueue.sql" />
+    <Build Include="Tables\CouponClass.sql" />
+    <Build Include="Tables\CouponClassMedium.sql" />
+    <Build Include="Tables\CouponClassMediumQueue.sql" />
+    <Build Include="Tables\CouponClassQueue.sql" />
+    <Build Include="Tables\CouponMarketingChannel.sql" />
+    <Build Include="Tables\CouponMarketingChannelQueue.sql" />
+    <Build Include="Tables\CouponPurpose.sql" />
+    <Build Include="Tables\CouponPurposeQueue.sql" />
+    <Build Include="Tables\CouponQueue.sql" />
+    <Build Include="Tables\CouponRedemption.sql" />
+    <Build Include="Tables\CouponRedemptionQueue.sql" />
+    <Build Include="Tables\Currency.sql" />
+    <Build Include="Tables\CurrencyQueue.sql" />
+    <Build Include="Tables\Customer.sql" />
+    <Build Include="Tables\CustomerQueue.sql" />
+    <Build Include="Tables\DistributionChannel.sql" />
+    <Build Include="Tables\DistributionChannelQueue.sql" />
+    <Build Include="Tables\FraudReasonCode.sql" />
+    <Build Include="Tables\FraudReasonCodeQueue.sql" />
+    <Build Include="Tables\Language.sql" />
+    <Build Include="Tables\LanguageLocale.sql" />
+    <Build Include="Tables\LanguageLocaleQueue.sql" />
+    <Build Include="Tables\LanguageQueue.sql" />
+    <Build Include="Tables\Medium.sql" />
+    <Build Include="Tables\MediumQueue.sql" />
+    <Build Include="Tables\PartnerCustomer.sql" />
+    <Build Include="Tables\PartnerCustomerQueue.sql" />
+    <Build Include="Tables\PartnerHierarchy.sql" />
+    <Build Include="Tables\PartnerHierarchyQueue.sql" />
+    <Build Include="Tables\PaymentInstr.sql" />
+    <Build Include="Tables\PaymentInstrQueue.sql" />
+    <Build Include="Tables\PubAccount.sql" />
+    <Build Include="Tables\PubAccountQueue.sql" />
+    <Build Include="Tables\SystemParameters.sql" />
+    <Build Include="Deployment\PopulateAPPStagingProcessStatus.sql" />
+    <Build Include="Deployment\PopulateAppStagingTable.sql" />
+    <Build Include="Deployment\PopulateSystemParametres.sql" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,25 @@
+﻿CREATE TABLE [dbo].[PaymentInstr] (
+    [PaymentInstrId]     INT           NOT NULL,
+    [PaymentInstrName]   NVARCHAR (50) NOT NULL,
+    [PaymentInstrTypeId] TINYINT       NOT NULL,
+    [CustomerId]         INT           NOT NULL,
+    [LifecycleStatusId]  TINYINT       NOT NULL,
+    [AddressId]          INT           NULL,
+    [CreatedDTim]        DATETIME      NOT NULL,
+    [ModifiedDTim]       DATETIME      NOT NULL,
+    [ModifiedByUserId]   INT           NOT NULL,
+    [Timestamp]          BINARY (8)    NULL,
+    [FriendlyName]       NVARCHAR (64) NULL,
+    [PaymentInstrNumber] CHAR (10)     NULL,
+    [ValidationCount]    TINYINT       DEFAULT ((0)) NULL,
+    [PIN]                INT           NULL,
+    [LastValidationDTim] DATETIME      NULL,
+    [PINResentCount]     TINYINT       DEFAULT ((0)) NULL,
+    [RPMID]              BIGINT        NULL,
+    [CTPAccountID]       VARCHAR (32)  NULL,
+    [CTPPaymentMethodID] VARCHAR (20)  NULL,
+    [AccountHolderName]  NVARCHAR (64) NULL,
+    [SystemCreated]      BIT           NULL,
+    [LandedDateTime]     DATETIME      NULL
+);
+
